@@ -1,7 +1,7 @@
-import { ItemStateMapSchema, ParamsSchema, type ItemStateMap, type Params } from './schema';
+import { ItemProgressMapSchema, ParamsSchema, type ItemProgressMap, type Params } from './schema';
 
 const PARAMS_KEY = 'packliste:params';
-const ITEM_STATES_KEY = 'packliste:item-states';
+const ITEM_PROGRESS_KEY = 'packliste:item-progress';
 
 const hasLocalStorage = typeof localStorage !== 'undefined';
 
@@ -26,12 +26,12 @@ export function saveParams(params: Params): void {
   localStorage.setItem(PARAMS_KEY, JSON.stringify(params));
 }
 
-export function loadItemStates(): ItemStateMap {
-  const parsed = ItemStateMapSchema.safeParse(readJson(ITEM_STATES_KEY));
+export function loadItemProgress(): ItemProgressMap {
+  const parsed = ItemProgressMapSchema.safeParse(readJson(ITEM_PROGRESS_KEY));
   return parsed.success ? parsed.data : {};
 }
 
-export function saveItemStates(states: ItemStateMap): void {
+export function saveItemProgress(progress: ItemProgressMap): void {
   if (!hasLocalStorage) return;
-  localStorage.setItem(ITEM_STATES_KEY, JSON.stringify(states));
+  localStorage.setItem(ITEM_PROGRESS_KEY, JSON.stringify(progress));
 }

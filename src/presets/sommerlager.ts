@@ -18,32 +18,34 @@ const sommerlager: PresetDefinition = {
   resolveItems(params): Item[] {
     const items: Item[] = [
       // Kleidung
-      { id: 'lager-lange-hosen', name: 'Lange Hosen', category: 'Kleidung', importance: 'pflicht', quantity: { min: 1, max: 2 } },
-      { id: 'lager-kurze-hosen', name: 'Kurze Hosen', category: 'Kleidung', importance: 'pflicht', quantity: { min: 2, max: 4 } },
-      { id: 'lager-jacke', name: 'Jacke', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-pullover', name: 'Pullover', category: 'Kleidung', importance: 'pflicht', quantity: { min: 1, max: 2 } },
+      { id: 'lager-lange-hosen', name: 'Lange Hosen', category: 'Kleidung', importance: 'pflicht', quantity: { min: 1, max: 2 }, icon: '👖' },
+      { id: 'lager-kurze-hosen', name: 'Kurze Hosen', category: 'Kleidung', importance: 'pflicht', quantity: { min: 2, max: 4 }, icon: '🩳' },
+      { id: 'lager-jacke', name: 'Jacke', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧥' },
+      { id: 'lager-pullover', name: 'Pullover', category: 'Kleidung', importance: 'pflicht', quantity: { min: 1, max: 2 }, icon: '🧥' },
       {
         id: 'lager-tshirts',
         name: 'T-Shirts',
         category: 'Kleidung',
         importance: 'pflicht',
         quantity: perDay(1, params.days, 8),
+        icon: '👕',
       },
-      { id: 'lager-sportzeug', name: 'Sportzeug (für Programm/Sport)', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-badesachen', name: 'Badesachen (doppelt)', category: 'Kleidung', importance: 'pflicht', quantity: 2 },
-      { id: 'lager-wanderschuhe', name: 'Feste, bequeme Schuhe (zum Wandern)', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-leichte-schuhe', name: 'Leichte Schuhe', category: 'Kleidung', importance: 'optional', quantity: 1 },
-      { id: 'lager-turnschuhe', name: 'Turnschuhe', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-gummistiefel', name: 'Gummistiefel', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-regenkleidung', name: 'Regencape und -hose', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-sonnenhut', name: 'Sonnenhut / Cappy', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-flipflops', name: 'Badelatschen', category: 'Kleidung', importance: 'optional', quantity: 1 },
+      { id: 'lager-sportzeug', name: 'Sportzeug (für Programm/Sport)', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🎽' },
+      { id: 'lager-badesachen', name: 'Badesachen (doppelt)', category: 'Kleidung', importance: 'pflicht', quantity: 2, icon: '🩱' },
+      { id: 'lager-wanderschuhe', name: 'Feste, bequeme Schuhe (zum Wandern)', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🥾' },
+      { id: 'lager-leichte-schuhe', name: 'Leichte Schuhe', category: 'Kleidung', importance: 'optional', quantity: 1, icon: '👟' },
+      { id: 'lager-turnschuhe', name: 'Turnschuhe', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '👟' },
+      { id: 'lager-gummistiefel', name: 'Gummistiefel', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '👢' },
+      { id: 'lager-regenkleidung', name: 'Regencape und -hose', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '☔' },
+      { id: 'lager-sonnenhut', name: 'Sonnenhut / Cappy', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧢' },
+      { id: 'lager-flipflops', name: 'Badelatschen', category: 'Kleidung', importance: 'optional', quantity: 1, icon: '🩴' },
       {
         id: 'lager-nachtwache-kleidung',
         name: 'Dunkle, alte Kleidung (für Nachtwache)',
         category: 'Kleidung',
         importance: 'optional',
         quantity: 1,
+        icon: '🌒',
       },
       {
         id: 'lager-schuetzenfest-kleidung',
@@ -51,6 +53,7 @@ const sommerlager: PresetDefinition = {
         category: 'Kleidung',
         importance: 'optional',
         quantity: 1,
+        icon: '🎯',
       },
       {
         id: 'lager-festliche-kleidung',
@@ -58,59 +61,61 @@ const sommerlager: PresetDefinition = {
         category: 'Kleidung',
         importance: 'optional',
         quantity: 1,
+        icon: '🎉',
       },
 
       // Waschzeug (Hygiene)
-      { id: 'lager-handtuecher', name: 'Handtücher (klein & groß)', category: 'Hygiene', importance: 'pflicht', quantity: 2 },
-      { id: 'lager-duschzeug', name: 'Duschgel & Shampoo', category: 'Hygiene', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-kamm', name: 'Kamm / Bürste', category: 'Hygiene', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-mueckenspray', name: 'Insektenschutz', category: 'Hygiene', importance: 'optional', quantity: 1 },
-      { id: 'lager-foehn', name: 'Föhn', category: 'Hygiene', importance: 'optional', quantity: 1 },
-      { id: 'lager-zahnspange', name: 'Zubehör für Zahnspange', category: 'Hygiene', importance: 'optional', quantity: 1 },
+      { id: 'lager-handtuecher', name: 'Handtücher (klein & groß)', category: 'Hygiene', importance: 'pflicht', quantity: 2, icon: '🛁' },
+      { id: 'lager-duschzeug', name: 'Duschgel & Shampoo', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '🧴' },
+      { id: 'lager-kamm', name: 'Kamm / Bürste', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '💇' },
+      { id: 'lager-mueckenspray', name: 'Insektenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
+      { id: 'lager-foehn', name: 'Föhn', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '💨' },
+      { id: 'lager-zahnspange', name: 'Zubehör für Zahnspange', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦷' },
 
       // Geschirr (Ausrüstung)
-      { id: 'lager-trinkflasche', name: 'Trinkflasche (auf Dichtigkeit prüfen)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-besteck', name: 'Besteck', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-teller', name: 'Teller (tief & flach, Plastik)', category: 'Ausrüstung', importance: 'pflicht', quantity: 2 },
-      { id: 'lager-brotdose', name: 'Brotdose', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-becher', name: 'Tasse / Becher (Plastik)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-trockentuch', name: 'Trockentuch', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
+      { id: 'lager-trinkflasche', name: 'Trinkflasche (auf Dichtigkeit prüfen)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '💧' },
+      { id: 'lager-besteck', name: 'Besteck', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🍴' },
+      { id: 'lager-teller', name: 'Teller (tief & flach, Plastik)', category: 'Ausrüstung', importance: 'pflicht', quantity: 2, icon: '🍽️' },
+      { id: 'lager-brotdose', name: 'Brotdose', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🥪' },
+      { id: 'lager-becher', name: 'Tasse / Becher (Plastik)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🥤' },
+      { id: 'lager-trockentuch', name: 'Trockentuch', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🧻' },
 
       // Sonstiges / weitere Ausrüstung
-      { id: 'lager-rucksack', name: 'Rucksack', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-taschenlampe', name: 'Taschenlampe mit Ersatzbatterien', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-sonnenbrille', name: 'Sonnenbrille', category: 'Ausrüstung', importance: 'optional', quantity: 1 },
-      { id: 'lager-ersatzbrille', name: 'Ersatzbrille', category: 'Sonstiges', importance: 'optional', quantity: 1 },
-      { id: 'lager-brustbeutel', name: 'Brustbeutel für das Taschengeld', category: 'Sonstiges', importance: 'optional', quantity: 1 },
+      { id: 'lager-rucksack', name: 'Rucksack', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🎒' },
+      { id: 'lager-taschenlampe', name: 'Taschenlampe mit Ersatzbatterien', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🔦' },
+      { id: 'lager-sonnenbrille', name: 'Sonnenbrille', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🕶️' },
+      { id: 'lager-ersatzbrille', name: 'Ersatzbrille', category: 'Sonstiges', importance: 'optional', quantity: 1, icon: '👓' },
+      { id: 'lager-brustbeutel', name: 'Brustbeutel für das Taschengeld', category: 'Sonstiges', importance: 'optional', quantity: 1, icon: '💰' },
       {
         id: 'lager-schreibzeug',
         name: 'Schreibzeug / Briefmarken / Postkarten',
         category: 'Sonstiges',
         importance: 'optional',
         quantity: { min: 1, max: 3 },
+        icon: '✏️',
       },
 
       // Nachtzeug – gemeinsamer Kern (unabhängig vom Geschlecht)
-      { id: 'lager-schlafsack', name: 'Schlafsack (warm; kein Sommerschlafsack)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-warme-decke', name: 'Warme Decke', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-kopfkissen', name: 'Kopfkissen', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-      { id: 'lager-spannbettlaken', name: 'Spannbettlaken', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
+      { id: 'lager-schlafsack', name: 'Schlafsack (warm; kein Sommerschlafsack)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛌' },
+      { id: 'lager-warme-decke', name: 'Warme Decke', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛏️' },
+      { id: 'lager-kopfkissen', name: 'Kopfkissen', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛏️' },
+      { id: 'lager-spannbettlaken', name: 'Spannbettlaken', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛏️' },
     ];
 
     // Nachtzeug Jungen: Zeltlager mit Isomatte/Luftmatratze statt festem Bett.
     if (params.gender === 'maennlich') {
       items.push(
-        { id: 'lager-isomatte', name: 'Isomatte', category: 'Ausrüstung', importance: 'pflicht', quantity: 1 },
-        { id: 'lager-luftmatratze', name: 'Luftmatratze mit Pumpe', category: 'Ausrüstung', importance: 'optional', quantity: 1 },
-        { id: 'lager-trainingsanzug', name: 'Trainingsanzug (als Schlafanzug)', category: 'Kleidung', importance: 'optional', quantity: 1 },
+        { id: 'lager-isomatte', name: 'Isomatte', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🏕️' },
+        { id: 'lager-luftmatratze', name: 'Luftmatratze mit Pumpe', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🏕️' },
+        { id: 'lager-trainingsanzug', name: 'Trainingsanzug (als Schlafanzug)', category: 'Kleidung', importance: 'optional', quantity: 1, icon: '🌙' },
       );
     }
 
     // Nachtzeug Mädchen: feste Betten, daher Bettwäsche statt Isomatte.
     if (params.gender === 'weiblich') {
       items.push(
-        { id: 'lager-bettwaesche', name: 'Bettwäsche (falls kein Schlafsack)', category: 'Ausrüstung', importance: 'optional', quantity: 1 },
-        { id: 'lager-hausschuhe', name: 'Hausschuhe', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
+        { id: 'lager-bettwaesche', name: 'Bettwäsche (falls kein Schlafsack)', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🛏️' },
+        { id: 'lager-hausschuhe', name: 'Hausschuhe', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🥿' },
       );
     }
 
@@ -122,6 +127,7 @@ const sommerlager: PresetDefinition = {
         category: 'Kleidung',
         importance: 'optional',
         quantity: 1,
+        icon: '🧥',
       });
     }
 
@@ -133,6 +139,7 @@ const sommerlager: PresetDefinition = {
         category: 'Sonstiges',
         importance: 'optional',
         quantity: 1,
+        icon: '🧺',
       });
     }
 

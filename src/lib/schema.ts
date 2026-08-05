@@ -60,6 +60,8 @@ export const ItemSchema = z
     category: CategorySchema,
     importance: ImportanceSchema,
     quantity: QuantitySchema,
+    /** Optional single emoji for quick visual identification; falls back to a per-category icon. */
+    icon: z.string().min(1).optional(),
   })
   .strict();
 export type Item = z.infer<typeof ItemSchema>;
@@ -98,5 +100,18 @@ export interface PresetDefinition {
 export const ItemStateSchema = z.enum(['offen', 'eingepackt', 'nicht_benoetigt', 'morgen']);
 export type ItemState = z.infer<typeof ItemStateSchema>;
 
-export const ItemStateMapSchema = z.record(z.string(), ItemStateSchema);
-export type ItemStateMap = z.infer<typeof ItemStateMapSchema>;
+/**
+ * Per-item user tracking: the four-way checklist state plus an editable
+ * `amount` that overrides the preset's computed quantity suggestion (e.g.
+ * the suggestion says "1–2", but the user decides to actually pack 1).
+ */
+export const ItemProgressSchema = z
+  .object({
+    state: ItemStateSchema,
+    amount: z.number().int().nonnegative(),
+  })
+  .strict();
+export type ItemProgress = z.infer<typeof ItemProgressSchema>;
+
+export const ItemProgressMapSchema = z.record(z.string(), ItemProgressSchema);
+export type ItemProgressMap = z.infer<typeof ItemProgressMapSchema>;

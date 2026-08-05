@@ -8,14 +8,15 @@ const skifahren: PresetDefinition = {
 
   resolveItems(params): Item[] {
     const items: Item[] = [
-      { id: 'ski-jacke', name: 'Skijacke', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
-      { id: 'ski-hose', name: 'Skihose', category: 'Kleidung', importance: 'pflicht', quantity: 1 },
+      { id: 'ski-jacke', name: 'Skijacke', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧥' },
+      { id: 'ski-hose', name: 'Skihose', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '👖' },
       {
         id: 'ski-handschuhe',
         name: 'Skihandschuhe',
         category: 'Kleidung',
         importance: 'pflicht',
         quantity: { min: 1, max: 2 },
+        icon: '🧤',
       },
       {
         id: 'ski-muetze',
@@ -23,14 +24,16 @@ const skifahren: PresetDefinition = {
         category: 'Kleidung',
         importance: 'pflicht',
         quantity: { min: 1, max: 2 },
+        icon: '🧢',
       },
-      { id: 'ski-schal', name: 'Schal / Buff', category: 'Kleidung', importance: 'optional', quantity: 1 },
+      { id: 'ski-schal', name: 'Schal / Buff', category: 'Kleidung', importance: 'optional', quantity: 1, icon: '🧣' },
       {
         id: 'ski-skibrille',
         name: 'Skibrille / Sonnenbrille',
         category: 'Ausrüstung',
         importance: 'pflicht',
         quantity: 1,
+        icon: '🕶️',
       },
       {
         id: 'ski-sonnencreme-lsf',
@@ -38,14 +41,16 @@ const skifahren: PresetDefinition = {
         category: 'Hygiene',
         importance: 'pflicht',
         quantity: 1,
+        icon: '☀️',
       },
-      { id: 'ski-lippenpflege', name: 'Lippenpflege mit LSF', category: 'Hygiene', importance: 'optional', quantity: 1 },
+      { id: 'ski-lippenpflege', name: 'Lippenpflege mit LSF', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🧴' },
       {
         id: 'ski-thermounterwaesche',
         name: 'Thermo-Unterwäsche',
         category: 'Kleidung',
         importance: 'pflicht',
         quantity: { min: 1, max: 2 },
+        icon: '🩲',
       },
       {
         id: 'ski-skisocken',
@@ -53,10 +58,11 @@ const skifahren: PresetDefinition = {
         category: 'Kleidung',
         importance: 'pflicht',
         quantity: perDay(1, params.days),
+        icon: '🧦',
       },
-      { id: 'ski-ski-ausruestung', name: 'Ski/Snowboard + Stöcke', category: 'Ausrüstung', importance: 'optional', quantity: 1 },
-      { id: 'ski-helm', name: 'Skihelm', category: 'Ausrüstung', importance: 'optional', quantity: 1 },
-      { id: 'ski-skischuhe', name: 'Skischuhe', category: 'Ausrüstung', importance: 'optional', quantity: 1 },
+      { id: 'ski-ski-ausruestung', name: 'Ski/Snowboard + Stöcke', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🎿' },
+      { id: 'ski-helm', name: 'Skihelm', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🪖' },
+      { id: 'ski-skischuhe', name: 'Skischuhe', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🥾' },
     ];
 
     if (params.days >= 3) {
@@ -66,6 +72,7 @@ const skifahren: PresetDefinition = {
         category: 'Sonstiges',
         importance: 'optional',
         quantity: 1,
+        icon: '🎫',
       });
     }
 
@@ -76,6 +83,7 @@ const skifahren: PresetDefinition = {
         category: 'Ausrüstung',
         importance: 'optional',
         quantity: perDay(1, params.days, 10),
+        icon: '🔥',
       });
     }
 

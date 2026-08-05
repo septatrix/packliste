@@ -6,7 +6,8 @@ export interface ResolvedItem {
   name: string;
   category: Category;
   importance: Importance;
-  /** Human-readable quantity, e.g. "7", "1" or "1–2". */
+  icon: string;
+  /** Human-readable quantity suggestion, e.g. "7", "1" or "1–2". */
   quantityLabel: string;
   quantityMin: number;
   quantityMax: number;
@@ -26,6 +27,16 @@ const CATEGORY_ORDER: Category[] = [
   'Ausrüstung',
   'Sonstiges',
 ];
+
+/** Used whenever a preset doesn't specify an item-level icon. */
+const CATEGORY_ICONS: Record<Category, string> = {
+  Dokumente: '📄',
+  Kleidung: '👕',
+  Hygiene: '🧴',
+  Elektronik: '🔌',
+  Ausrüstung: '🎒',
+  Sonstiges: '📦',
+};
 
 function formatQuantity(quantity: Quantity): { label: string; min: number; max: number } {
   if (typeof quantity === 'number') {
@@ -60,6 +71,7 @@ export function resolveList(params: Params, presets: PresetDefinition[]): Resolv
         name: item.name,
         category: item.category,
         importance: item.importance,
+        icon: item.icon ?? CATEGORY_ICONS[item.category],
         quantityLabel: label,
         quantityMin: min,
         quantityMax: max,

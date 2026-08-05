@@ -12,20 +12,21 @@ const base: PresetDefinition = {
 
   resolveItems(params): Item[] {
     const items: Item[] = [
-      { id: 'base-ausweis', name: 'Personalausweis', category: 'Dokumente', importance: 'pflicht', quantity: 1 },
-      { id: 'base-geld', name: 'Geldbeutel mit Bargeld/Karten', category: 'Dokumente', importance: 'pflicht', quantity: 1 },
-      { id: 'base-handy', name: 'Smartphone', category: 'Elektronik', importance: 'pflicht', quantity: 1 },
-      { id: 'base-ladekabel', name: 'Ladekabel', category: 'Elektronik', importance: 'pflicht', quantity: 1 },
-      { id: 'base-powerbank', name: 'Powerbank', category: 'Elektronik', importance: 'optional', quantity: 1 },
-      { id: 'base-zahnbuerste', name: 'Zahnbürste', category: 'Hygiene', importance: 'pflicht', quantity: 1 },
-      { id: 'base-zahnpasta', name: 'Zahnpasta (Reisegröße)', category: 'Hygiene', importance: 'pflicht', quantity: 1 },
-      { id: 'base-deo', name: 'Deo', category: 'Hygiene', importance: 'pflicht', quantity: 1 },
+      { id: 'base-ausweis', name: 'Personalausweis', category: 'Dokumente', importance: 'pflicht', quantity: 1, icon: '🪪' },
+      { id: 'base-geld', name: 'Geldbeutel mit Bargeld/Karten', category: 'Dokumente', importance: 'pflicht', quantity: 1, icon: '💳' },
+      { id: 'base-handy', name: 'Smartphone', category: 'Elektronik', importance: 'pflicht', quantity: 1, icon: '📱' },
+      { id: 'base-ladekabel', name: 'Ladekabel', category: 'Elektronik', importance: 'pflicht', quantity: 1, icon: '🔌' },
+      { id: 'base-powerbank', name: 'Powerbank', category: 'Elektronik', importance: 'optional', quantity: 1, icon: '🔋' },
+      { id: 'base-zahnbuerste', name: 'Zahnbürste', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '🪥' },
+      { id: 'base-zahnpasta', name: 'Zahnpasta (Reisegröße)', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '🧴' },
+      { id: 'base-deo', name: 'Deo', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '🧴' },
       {
         id: 'base-unterwaesche',
         name: 'Unterwäsche',
         category: 'Kleidung',
         importance: 'pflicht',
         quantity: perDay(1, params.days),
+        icon: '🩲',
       },
       {
         id: 'base-socken',
@@ -33,6 +34,7 @@ const base: PresetDefinition = {
         category: 'Kleidung',
         importance: 'pflicht',
         quantity: perDay(1, params.days),
+        icon: '🧦',
       },
       {
         id: 'base-schlafanzug',
@@ -40,19 +42,21 @@ const base: PresetDefinition = {
         category: 'Kleidung',
         importance: 'optional',
         quantity: { min: 1, max: 2 },
+        icon: '🌙',
       },
     ];
 
     // Reisepass & Co. nur außerhalb des Heimatlands nötig.
     if (params.destination !== 'inland') {
       items.push(
-        { id: 'base-reisepass', name: 'Reisepass', category: 'Dokumente', importance: 'pflicht', quantity: 1 },
+        { id: 'base-reisepass', name: 'Reisepass', category: 'Dokumente', importance: 'pflicht', quantity: 1, icon: '🛂' },
         {
           id: 'base-versicherung',
           name: 'Nachweis Auslandskrankenversicherung',
           category: 'Dokumente',
           importance: 'optional',
           quantity: 1,
+          icon: '📋',
         },
       );
     }
@@ -66,14 +70,16 @@ const base: PresetDefinition = {
           category: 'Dokumente',
           importance: 'pflicht',
           quantity: 1,
+          icon: '🛃',
         },
-        { id: 'base-adapter', name: 'Steckdosenadapter', category: 'Elektronik', importance: 'pflicht', quantity: 1 },
+        { id: 'base-adapter', name: 'Steckdosenadapter', category: 'Elektronik', importance: 'pflicht', quantity: 1, icon: '🔌' },
         {
           id: 'base-fremdwaehrung',
           name: 'Bargeld in Landeswährung',
           category: 'Dokumente',
           importance: 'optional',
           quantity: 1,
+          icon: '💵',
         },
       );
     }
@@ -85,6 +91,7 @@ const base: PresetDefinition = {
         category: 'Sonstiges',
         importance: 'optional',
         quantity: 1,
+        icon: '💧',
       });
     }
 
@@ -95,6 +102,7 @@ const base: PresetDefinition = {
         category: 'Hygiene',
         importance: 'pflicht',
         quantity: 1,
+        icon: '☀️',
       });
     }
 
@@ -105,6 +113,7 @@ const base: PresetDefinition = {
         category: 'Hygiene',
         importance: 'optional',
         quantity: perDay(1, params.days, 20),
+        icon: '🧴',
       });
     }
 

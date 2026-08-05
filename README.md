@@ -4,10 +4,15 @@ A client-side web app for creating interactive travel/vacation packing lists.
 Pick an activity preset (Skifahren, Wandern, Sommerlager, …) plus trip
 parameters — climate, trip length, mode of travel, destination scope
 (inland / EU-Schengen / international), gender — and get a checklist with
-per-item quantities computed for your trip. Track each item as *offen*,
-*eingepackt*, *nicht benötigt*, or *für morgen* (things still needed that get
-collected on a separate "grab before leaving" list). All state is written to
-`localStorage`; there is no backend — the whole app is a static site.
+per-item quantities computed for your trip, shown with a small icon per item
+for quick scanning. Track each item as *offen*, *eingepackt*, *nicht
+benötigt*, or *für morgen* (things still needed that get collected on a
+separate "grab before leaving" list), and override the computed quantity
+per item if you want to pack a different amount than suggested. All state
+is written to `localStorage`; there is no backend — the whole app is a
+static site. The list itself renders as a print-like two-column layout
+(A4 width as the reference point) that collapses to one column on narrow
+screens.
 
 **Stack:** [Astro](https://astro.build) (static output) +
 [Vue 3.6](https://vuejs.org) + plain CSS. Components are written with
@@ -40,10 +45,12 @@ interface PresetDefinition {
 
 `resolveItems` receives the chosen trip parameters (`climate`, `days`,
 `travel`, `destination`, `gender`, …) and returns the list of items with
-their category, importance (`pflicht` | `optional`), and quantity (a fixed
-number, or a `{ min, max }` range). Because it's just a function, a preset
-author has the full language available — loops, conditionals, arithmetic —
-instead of a fixed rule vocabulary:
+their category, importance (`pflicht` | `optional`), quantity (a fixed
+number, or a `{ min, max }` range), and an optional `icon` (a single emoji;
+falls back to a per-category default if omitted — see `CATEGORY_ICONS` in
+`src/lib/engine.ts`). Because it's just a function, a preset author has the
+full language available — loops, conditionals, arithmetic — instead of a
+fixed rule vocabulary:
 
 ```ts
 resolveItems(params) {
@@ -96,16 +103,28 @@ between presets. Useful as a quick regression check after editing a preset.
 
 - `src/lib/schema.ts` — Zod schemas and types shared by presets and the app
   (`Params`, `Item`, `Quantity`, category/importance/climate/etc. enums,
-  `ItemState` for the four-way checklist state).
+  `ItemState` for the four-way checklist state, `ItemProgress` for a
+  per-item `{ state, amount }` pair).
 - `src/lib/engine.ts` — `resolveList(params, presets)` runs each preset's
-  `resolveItems`, validates the output, and groups items by category in a
-  fixed display order.
+  `resolveItems`, validates the output, resolves each item's icon (its own
+  or the category fallback), and groups items by category in a fixed
+  display order.
 - `src/lib/storage.ts` — `localStorage` persistence for trip parameters and
-  per-item checklist state.
+  per-item progress (`{ state, amount }`).
 - `src/presets/` — the preset modules described above.
 - `src/components/` — `PackingApp.vue` (root island) → `ParameterForm.vue`
-  (trip parameters) + `PackingList.vue` → `ItemRow.vue` (per-item four-way
-  state control) + `TomorrowList.vue` ("für morgen" aggregation).
+  (trip parameters) + `PackingList.vue` → `ItemRow.vue` (per-item icon,
+  editable amount, and four-way state control) + `TomorrowList.vue`
+  ("für morgen" aggregation).
+
+### Packed-amount override
+
+Each item's `quantity` (fixed or range) is only a *suggestion* — `ItemRow`
+shows it as the number input's tooltip and default value (the range's max),
+but the number itself is freely editable and stored per item in
+`ItemProgress.amount`, independent of the four-way state. This lets someone
+decide "the preset suggests 1–2, but I'm only bringing 1" without that
+being conflated with whether the item is packed yet.
 
 ## Vapor mode
 
