@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { addDays, daysBetweenInclusive, todayIso } from './dates';
 
 /**
  * Shared types for packing-list presets.
@@ -66,7 +67,11 @@ export const ItemSchema = z
   .strict();
 export type Item = z.infer<typeof ItemSchema>;
 
-/** Runtime trip parameters chosen by the user. */
+/**
+ * Runtime trip parameters consumed by presets/the engine. `days` is always
+ * a plain number here — presets never deal with dates, only a day count
+ * (see `TripSelection` below for what the user actually picks in the UI).
+ */
 export const ParamsSchema = z
   .object({
     presetId: z.string().min(1),
@@ -79,21 +84,52 @@ export const ParamsSchema = z
   .strict();
 export type Params = z.infer<typeof ParamsSchema>;
 
-export const DEFAULT_PARAMS: Params = {
-  presetId: '',
-  climate: 'mild',
-  days: 7,
-  travel: 'auto',
-  destination: 'inland',
-  gender: 'divers',
-};
-
 /** A packing preset: metadata plus the function that computes its items. */
 export interface PresetDefinition {
   id: string;
   name: string;
   description?: string;
   resolveItems(params: Params): Item[];
+}
+
+const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Erwartetes Format: JJJJ-MM-TT');
+
+/**
+ * What the user actually picks in `ParameterForm` and what gets persisted:
+ * a start/end date instead of a raw day count. `deriveParams` turns this
+ * into a `Params` object (with `days` computed) just before resolving the
+ * list, so presets and the engine never need to know about dates.
+ */
+export const TripSelectionSchema = z
+  .object({
+    presetId: z.string().min(1),
+    climate: ClimateSchema,
+    startDate: IsoDateSchema,
+    endDate: IsoDateSchema,
+    travel: TravelSchema,
+    destination: DestinationSchema,
+    gender: ParamGenderSchema,
+  })
+  .strict()
+  .refine((selection) => selection.endDate >= selection.startDate, {
+    message: 'Abreisedatum darf nicht vor dem Anreisedatum liegen',
+    path: ['endDate'],
+  });
+export type TripSelection = z.infer<typeof TripSelectionSchema>;
+
+export const DEFAULT_TRIP_SELECTION: TripSelection = {
+  presetId: '',
+  climate: 'mild',
+  startDate: todayIso(),
+  endDate: addDays(todayIso(), 6),
+  travel: 'auto',
+  destination: 'inland',
+  gender: 'divers',
+};
+
+export function deriveParams(selection: TripSelection): Params {
+  const { startDate, endDate, ...rest } = selection;
+  return { ...rest, days: daysBetweenInclusive(startDate, endDate) };
 }
 
 /** State of a single checklist item as tracked by the user. */

@@ -1,6 +1,6 @@
-import { ItemProgressMapSchema, ParamsSchema, type ItemProgressMap, type Params } from './schema';
+import { ItemProgressMapSchema, TripSelectionSchema, type ItemProgressMap, type TripSelection } from './schema';
 
-const PARAMS_KEY = 'packliste:params';
+const TRIP_SELECTION_KEY = 'packliste:trip-selection';
 const ITEM_PROGRESS_KEY = 'packliste:item-progress';
 
 const hasLocalStorage = typeof localStorage !== 'undefined';
@@ -16,14 +16,14 @@ function readJson(key: string): unknown {
   }
 }
 
-export function loadParams(): Params | undefined {
-  const parsed = ParamsSchema.safeParse(readJson(PARAMS_KEY));
+export function loadTripSelection(): TripSelection | undefined {
+  const parsed = TripSelectionSchema.safeParse(readJson(TRIP_SELECTION_KEY));
   return parsed.success ? parsed.data : undefined;
 }
 
-export function saveParams(params: Params): void {
+export function saveTripSelection(selection: TripSelection): void {
   if (!hasLocalStorage) return;
-  localStorage.setItem(PARAMS_KEY, JSON.stringify(params));
+  localStorage.setItem(TRIP_SELECTION_KEY, JSON.stringify(selection));
 }
 
 export function loadItemProgress(): ItemProgressMap {

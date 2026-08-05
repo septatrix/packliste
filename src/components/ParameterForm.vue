@@ -1,32 +1,50 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Params } from '../lib/schema';
+import { daysBetweenInclusive } from '../lib/dates';
+import type { TripSelection } from '../lib/schema';
 
 const props = defineProps<{
-  modelValue: Params;
+  modelValue: TripSelection;
   presetOptions: { id: string; name: string; description?: string }[];
 }>();
-const emit = defineEmits<{ 'update:modelValue': [value: Params] }>();
+const emit = defineEmits<{ 'update:modelValue': [value: TripSelection] }>();
 
 // v-model-backed computed per field. Vue's SSR renderer special-cases
 // v-model on <select> to mark the correct <option selected>, which plain
 // :value/@change bindings do not — using v-model here avoids a hydration
 // mismatch on first load.
-function field<K extends keyof Params>(key: K) {
-  return computed<Params[K]>({
+function field<K extends keyof TripSelection>(key: K) {
+  return computed<TripSelection[K]>({
     get: () => props.modelValue[key],
     set: (value) => emit('update:modelValue', { ...props.modelValue, [key]: value }),
   });
 }
 
 const presetId = field('presetId');
-const days = field('days');
 const climate = field('climate');
 const travel = field('travel');
 const destination = field('destination');
 const gender = field('gender');
 
 const selectedDescription = computed(() => props.presetOptions.find((p) => p.id === presetId.value)?.description);
+
+const tripDays = computed(() => daysBetweenInclusive(props.modelValue.startDate, props.modelValue.endDate));
+
+// Start/end date need cross-field correction (keep endDate >= startDate),
+// so they get dedicated setters instead of the generic field() helper.
+function setStartDate(value: string) {
+  if (!value) return;
+  const next = { ...props.modelValue, startDate: value };
+  if (next.endDate < value) next.endDate = value;
+  emit('update:modelValue', next);
+}
+
+function setEndDate(value: string) {
+  if (!value) return;
+  const next = { ...props.modelValue, endDate: value };
+  if (next.startDate > value) next.startDate = value;
+  emit('update:modelValue', next);
+}
 </script>
 
 <template>
@@ -41,8 +59,25 @@ const selectedDescription = computed(() => props.presetOptions.find((p) => p.id 
     </div>
 
     <div class="field">
-      <label for="days">Reisedauer (Tage)</label>
-      <input id="days" v-model.number="days" type="number" min="1" max="365" />
+      <label for="start-date">Anreise</label>
+      <input
+        id="start-date"
+        type="date"
+        :value="modelValue.startDate"
+        @change="setStartDate(($event.target as HTMLInputElement).value)"
+      />
+    </div>
+
+    <div class="field">
+      <label for="end-date">Abreise</label>
+      <input
+        id="end-date"
+        type="date"
+        :min="modelValue.startDate"
+        :value="modelValue.endDate"
+        @change="setEndDate(($event.target as HTMLInputElement).value)"
+      />
+      <p class="field-hint">Reisedauer: {{ tripDays }} {{ tripDays === 1 ? 'Tag' : 'Tage' }}</p>
     </div>
 
     <div class="field">

@@ -342,3 +342,105 @@ body {
     flex-basis: 100%;
   }
 }
+
+/* --- Print --- */
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  /* Force a plain light/high-contrast palette regardless of the viewer's
+     theme or OS color scheme — printing a dark background wastes toner
+     and some printers won't render it as intended anyway. Repeats the
+     [data-theme] selectors so this wins on specificity, not just source
+     order, against the theme overrides above. */
+  :root,
+  :root[data-theme='dark'],
+  :root[data-theme='light'] {
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-text: #000000;
+    --color-text-muted: #333333;
+    --color-border: #000000;
+    --color-state-eingepackt-bg: #ffffff;
+    --color-state-nicht-benoetigt-bg: #ffffff;
+    --color-state-morgen-bg: #ffffff;
+    --color-state-offen-bg: #ffffff;
+  }
+
+  .app {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* The interactive four-way state control means nothing on paper; a
+     hand-drawable checkbox in front of each item does. */
+  .item-state {
+    display: none;
+  }
+
+  .item-row::before {
+    content: '☐';
+    flex: none;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .item-amount {
+    border: none;
+    background: transparent;
+    padding: 0;
+    width: auto;
+    -moz-appearance: textfield;
+  }
+
+  .item-amount::-webkit-inner-spin-button,
+  .item-amount::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .progress {
+    display: none;
+  }
+
+  .parameter-form {
+    border: none;
+    padding: 0;
+    background: transparent;
+  }
+
+  .parameter-form select,
+  .parameter-form input {
+    border: none;
+    background: transparent;
+    padding: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    font-weight: 600;
+  }
+
+  .parameter-form input[type='date']::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+
+  /* No hover tooltip on paper, so a truncated name would lose information
+     permanently — let it wrap instead of ellipsizing for print. */
+  .item-name {
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+  }
+
+  .category,
+  .item-row {
+    break-inside: avoid;
+  }
+
+  .state-button,
+  .hint {
+    display: none;
+  }
+}

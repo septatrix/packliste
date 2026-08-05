@@ -3,10 +3,10 @@ import { computed, reactive, watch } from 'vue';
 import ParameterForm from './ParameterForm.vue';
 import PackingList from './PackingList.vue';
 import TomorrowList from './TomorrowList.vue';
-import { DEFAULT_PARAMS, type ItemState, type Params } from '../lib/schema';
+import { DEFAULT_TRIP_SELECTION, deriveParams, type ItemState, type TripSelection } from '../lib/schema';
 import { activityPresets, base, findActivityPreset } from '../presets';
 import { resolveList, type ResolvedItem } from '../lib/engine';
-import { loadItemProgress, loadParams, saveItemProgress, saveParams } from '../lib/storage';
+import { loadItemProgress, loadTripSelection, saveItemProgress, saveTripSelection } from '../lib/storage';
 
 const presetOptions = activityPresets.map((preset) => ({
   id: preset.id,
@@ -14,24 +14,26 @@ const presetOptions = activityPresets.map((preset) => ({
   description: preset.description,
 }));
 
-const params = reactive<Params>(loadParams() ?? { ...DEFAULT_PARAMS, presetId: activityPresets[0]?.id ?? '' });
+const tripSelection = reactive<TripSelection>(
+  loadTripSelection() ?? { ...DEFAULT_TRIP_SELECTION, presetId: activityPresets[0]?.id ?? '' },
+);
 const itemProgress = reactive(loadItemProgress());
 
-watch(params, (value) => saveParams({ ...value }), { deep: true });
+watch(tripSelection, (value) => saveTripSelection({ ...value }), { deep: true });
 watch(itemProgress, (value) => saveItemProgress({ ...value }), { deep: true });
 
-const selectedPreset = computed(() => findActivityPreset(params.presetId));
+const selectedPreset = computed(() => findActivityPreset(tripSelection.presetId));
 
 const categories = computed(() => {
   const preset = selectedPreset.value;
-  return preset ? resolveList(params, [base, preset]) : [];
+  return preset ? resolveList(deriveParams(tripSelection), [base, preset]) : [];
 });
 
 const allItems = computed<ResolvedItem[]>(() => categories.value.flatMap((c) => c.items));
 const itemById = computed(() => new Map(allItems.value.map((item) => [item.id, item])));
 
-function onParamsUpdate(value: Params) {
-  Object.assign(params, value);
+function onSelectionUpdate(value: TripSelection) {
+  Object.assign(tripSelection, value);
 }
 
 function onStateChange(itemId: string, state: ItemState) {
@@ -53,7 +55,7 @@ function onAmountChange(itemId: string, amount: number) {
       <p>Erstelle eine interaktive Packliste für deine nächste Reise.</p>
     </header>
 
-    <ParameterForm :model-value="params" :preset-options="presetOptions" @update:model-value="onParamsUpdate" />
+    <ParameterForm :model-value="tripSelection" :preset-options="presetOptions" @update:model-value="onSelectionUpdate" />
 
     <template v-if="selectedPreset">
       <PackingList
