@@ -1,0 +1,26 @@
+{
+  "name": "packliste",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Client-side web app to create and manage travel/vacation packing lists",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "validate:presets": "node scripts/validate-presets.mjs"
+  },
+  "dependencies": {
+    "@astrojs/vue": "^7.0.1",
+    "astro": "^7.1.6",
+    "js-yaml": "^4.1.0",
+    "vue": "3.6.0-rc.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9"
+  },
+  "overrides": {
+    "vue": "3.6.0-rc.2"
+  }
+}
