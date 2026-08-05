@@ -8,17 +8,19 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "validate:presets": "node scripts/validate-presets.mjs"
+    "validate:presets": "tsx scripts/validate-presets.ts"
   },
   "dependencies": {
     "@astrojs/vue": "^7.0.1",
     "astro": "^7.1.6",
-    "js-yaml": "^4.1.0",
     "vue": "3.6.0-rc.2",
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9"
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.1.2",
+    "tsx": "^4.19.0",
+    "typescript": "^6.0.3"
   },
   "overrides": {
     "vue": "3.6.0-rc.2"

@@ -1,4 +1,5 @@
-import type { Category, Importance, Item, ItemGender, Params, Preset, Quantity, When } from './schema';
+import { z } from 'zod';
+import { ItemSchema, type Category, type Importance, type Params, type PresetDefinition, type Quantity } from './schema';
 
 export interface ResolvedItem {
   id: string;
@@ -26,77 +27,49 @@ const CATEGORY_ORDER: Category[] = [
   'Sonstiges',
 ];
 
-/** All present `when` keys are ANDed; values within a key are ORed. */
-export function matchesWhen(when: When | undefined, params: Params): boolean {
-  if (!when) return true;
-  if (when.climate && !when.climate.includes(params.climate)) return false;
-  if (when.destination && !when.destination.includes(params.destination)) return false;
-  if (when.travel && !when.travel.includes(params.travel)) return false;
-  if (when.minDays !== undefined && params.days < when.minDays) return false;
-  return true;
-}
-
-/** 'alle' always matches; otherwise the item gender list must contain the chosen gender. */
-export function matchesGender(itemGender: ItemGender[], paramGender: Params['gender']): boolean {
-  if (itemGender.includes('alle')) return true;
-  if (paramGender === 'divers') return false;
-  return itemGender.includes(paramGender);
-}
-
-function isFixedQuantity(q: Quantity): q is Extract<Quantity, { count: number }> {
-  return 'count' in q;
-}
-
-export function computeQuantity(
-  quantity: Quantity,
-  days: number,
-): { label: string; min: number; max: number } {
-  const scale = (n: number) => (quantity.per === 'tag' ? n * days : n);
-  const applyCap = (n: number) => (quantity.cap !== undefined ? Math.min(n, quantity.cap) : n);
-
-  if (isFixedQuantity(quantity)) {
-    const value = applyCap(scale(quantity.count));
-    return { label: String(value), min: value, max: value };
+function formatQuantity(quantity: Quantity): { label: string; min: number; max: number } {
+  if (typeof quantity === 'number') {
+    return { label: String(quantity), min: quantity, max: quantity };
   }
-
-  const min = applyCap(scale(quantity.min));
-  const max = applyCap(scale(quantity.max));
-  return {
-    label: min === max ? String(min) : `${min}–${max}`,
-    min,
-    max,
-  };
+  const { min, max } = quantity;
+  return { label: min === max ? String(min) : `${min}–${max}`, min, max };
 }
 
 /**
- * Merge the base preset with the chosen activity preset, filter by gender
- * and `when` conditions, compute display quantities, and group the result
- * by category in a fixed display order.
+ * Run each preset's `resolveItems(params)`, validate the returned items
+ * defensively, and group everything by category in a fixed display order.
+ * All inclusion logic (gender, climate, destination, travel, per-day vs.
+ * per-trip quantities, ...) already happened inside the presets themselves.
  */
-export function resolveList(params: Params, base: Preset, preset: Preset): ResolvedCategory[] {
-  const allItems: Item[] = [...base.items, ...preset.items];
+export function resolveList(params: Params, presets: PresetDefinition[]): ResolvedCategory[] {
   const byCategory = new Map<Category, ResolvedItem[]>();
 
-  for (const item of allItems) {
-    if (!matchesGender(item.gender, params.gender)) continue;
-    if (!matchesWhen(item.when, params)) continue;
+  for (const preset of presets) {
+    let rawItems: unknown;
+    try {
+      rawItems = preset.resolveItems(params);
+    } catch (err) {
+      throw new Error(`Preset "${preset.id}" warf einen Fehler in resolveItems(): ${String(err)}`);
+    }
 
-    const { label, min, max } = computeQuantity(item.quantity, params.days);
-    const resolved: ResolvedItem = {
-      id: item.id,
-      name: item.name,
-      category: item.category,
-      importance: item.importance,
-      quantityLabel: label,
-      quantityMin: min,
-      quantityMax: max,
-    };
-
-    const bucket = byCategory.get(item.category);
-    if (bucket) {
-      bucket.push(resolved);
-    } else {
-      byCategory.set(item.category, [resolved]);
+    const items = z.array(ItemSchema).parse(rawItems);
+    for (const item of items) {
+      const { label, min, max } = formatQuantity(item.quantity);
+      const resolved: ResolvedItem = {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        importance: item.importance,
+        quantityLabel: label,
+        quantityMin: min,
+        quantityMax: max,
+      };
+      const bucket = byCategory.get(item.category);
+      if (bucket) {
+        bucket.push(resolved);
+      } else {
+        byCategory.set(item.category, [resolved]);
+      }
     }
   }
 
