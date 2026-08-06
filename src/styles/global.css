@@ -387,6 +387,16 @@ body {
   font-size: 0.8rem;
 }
 
+/* Highlights the amount once it's been changed away from the suggested
+   default (quantityMax) — a thicker accent-colored border plus bold,
+   accent-colored text, both of which print fine without needing a
+   background-color print override. */
+.item-amount-overridden {
+  border: 2px solid var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
 .item-state {
   display: flex;
   gap: 0.15rem;
@@ -574,6 +584,7 @@ body {
     --color-state-eingepackt: #2f6f4f;
     --color-state-nicht-benoetigt: #8a8579;
     --color-state-morgen: #b5651d;
+    --color-accent: #2f6f4f;
     /* No drop shadows on paper — the booktabs-style rules on .category do
        the job of separating tables without needing an outline or shadow. */
     --shadow-elevation: none;
@@ -609,6 +620,13 @@ body {
   .item-amount::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
+  }
+
+  /* Keep the override visible on paper too — a plain underline rather
+     than the on-screen box, consistent with the no-outlines print style. */
+  .item-amount.item-amount-overridden {
+    border: none;
+    border-bottom: 2px solid var(--color-accent);
   }
 
   .progress {

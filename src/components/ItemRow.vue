@@ -21,6 +21,11 @@ const infoText = computed(() => {
   return lines.join('\n');
 });
 
+// The amount input starts out prefilled with quantityMax (see PackingList's
+// progressFor()/PackingApp's onStateChange fallback) — highlight it once
+// the user has actually changed it away from that default.
+const isAmountOverridden = computed(() => props.progress.amount !== props.item.quantityMax);
+
 function onAmountInput(event: Event) {
   const value = Number((event.target as HTMLInputElement).value);
   emit('update:amount', Number.isFinite(value) && value >= 0 ? Math.round(value) : 0);
@@ -42,11 +47,12 @@ function onAmountInput(event: Event) {
     <div class="item-controls">
       <input
         class="item-amount"
+        :class="{ 'item-amount-overridden': isAmountOverridden }"
         type="number"
         min="0"
         step="1"
         :value="progress.amount"
-        :title="`Empfehlung: ${item.quantityLabel}`"
+        :title="isAmountOverridden ? `Angepasst (Empfehlung: ${item.quantityLabel})` : `Empfehlung: ${item.quantityLabel}`"
         @input="onAmountInput"
       />
       <div class="item-state" role="radiogroup" :aria-label="`Status für ${item.name}`">

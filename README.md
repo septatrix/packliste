@@ -214,6 +214,15 @@ but the number itself is freely editable and stored per item in
 decide "the preset suggests 1–2, but I'm only bringing 1" without that
 being conflated with whether the item is packed yet.
 
+Once the number differs from that default (`item.quantityMax`), `ItemRow`
+adds an `item-amount-overridden` class: a thicker accent-colored border and
+bold accent-colored text on screen, or just a plain accent-colored
+underline for print (consistent with the no-outline booktabs style —
+`.item-amount { border: none }` in the print stylesheet would otherwise
+strip it, so `.item-amount.item-amount-overridden` re-adds a
+`border-bottom` at higher specificity). Reverting the value back to the
+default removes the highlight again.
+
 ### Item provenance (the ⓘ info icon)
 
 Every item has a small ⓘ icon (`ItemRow.vue`) whose tooltip shows which
