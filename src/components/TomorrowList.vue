@@ -14,7 +14,7 @@ const tomorrowItems = computed(() =>
 
 <template>
   <section v-if="tomorrowItems.length > 0" class="tomorrow-list">
-    <h2>Für morgen besorgen</h2>
+    <h2>Vor Abfahrt besorgen</h2>
     <ul>
       <li v-for="{ item, amount } in tomorrowItems" :key="item.id">
         <span aria-hidden="true">{{ item.icon }}</span>

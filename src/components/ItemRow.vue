@@ -10,7 +10,7 @@ const STATES: { value: ItemState; icon: string; label: string }[] = [
   { value: 'offen', icon: '○', label: 'Offen' },
   { value: 'eingepackt', icon: '✓', label: 'Eingepackt' },
   { value: 'nicht_benoetigt', icon: '✕', label: 'Nicht benötigt' },
-  { value: 'morgen', icon: '⏰', label: 'Für morgen' },
+  { value: 'morgen', icon: '⏰', label: 'Vor Abfahrt' },
 ];
 
 // Shown in the info icon's tooltip: which preset this item came from, and
@@ -22,9 +22,22 @@ const infoText = computed(() => {
 });
 
 // The amount input starts out prefilled with quantityMax (see PackingList's
-// progressFor()/PackingApp's onStateChange fallback) — highlight it once
-// the user has actually changed it away from that default.
-const isAmountOverridden = computed(() => props.progress.amount !== props.item.quantityMax);
+// progressFor()/PackingApp's onStateChange fallback). Three states:
+// - default (still quantityMax): no highlight.
+// - below quantityMin: a warning — you may not be bringing enough.
+// - anything else changed (within the range, or above quantityMax): a
+//   plain "this was adjusted" highlight, nothing to worry about.
+const amountStatus = computed<'default' | 'under' | 'changed'>(() => {
+  if (props.progress.amount < props.item.quantityMin) return 'under';
+  if (props.progress.amount !== props.item.quantityMax) return 'changed';
+  return 'default';
+});
+
+const amountTitle = computed(() => {
+  if (amountStatus.value === 'under') return `Unter der Empfehlung (Empfehlung: ${props.item.quantityLabel})`;
+  if (amountStatus.value === 'changed') return `Angepasst (Empfehlung: ${props.item.quantityLabel})`;
+  return `Empfehlung: ${props.item.quantityLabel}`;
+});
 
 function onAmountInput(event: Event) {
   const value = Number((event.target as HTMLInputElement).value);
@@ -47,12 +60,15 @@ function onAmountInput(event: Event) {
     <div class="item-controls">
       <input
         class="item-amount"
-        :class="{ 'item-amount-overridden': isAmountOverridden }"
+        :class="{
+          'item-amount-overridden': amountStatus === 'changed',
+          'item-amount-under-recommended': amountStatus === 'under',
+        }"
         type="number"
         min="0"
         step="1"
         :value="progress.amount"
-        :title="isAmountOverridden ? `Angepasst (Empfehlung: ${item.quantityLabel})` : `Empfehlung: ${item.quantityLabel}`"
+        :title="amountTitle"
         @input="onAmountInput"
       />
       <div class="item-state" role="radiogroup" :aria-label="`Status für ${item.name}`">

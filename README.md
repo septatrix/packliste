@@ -226,14 +226,24 @@ but the number itself is freely editable and stored per item in
 decide "the preset suggests 1–2, but I'm only bringing 1" without that
 being conflated with whether the item is packed yet.
 
-Once the number differs from that default (`item.quantityMax`), `ItemRow`
-adds an `item-amount-overridden` class: a thicker accent-colored border and
-bold accent-colored text on screen, or just a plain accent-colored
-underline for print (consistent with the no-outline booktabs style —
+`ItemRow`'s `amountStatus` computed has three states, each with its own
+highlight:
+
+- **`default`** (still `item.quantityMax`) — no highlight.
+- **`changed`** (any other value at or above `item.quantityMin`) — a
+  thicker accent-colored border and bold accent-colored text
+  (`item-amount-overridden`); adjusted, but nothing to worry about.
+- **`under`** (below `item.quantityMin`) — the same treatment but in
+  `--color-warning` instead (`item-amount-under-recommended`): you may not
+  be bringing enough of this item.
+
+Reverting the value back to the default removes whichever highlight was
+showing. Both classes print as a plain colored underline rather than the
+on-screen box (consistent with the no-outline booktabs style —
 `.item-amount { border: none }` in the print stylesheet would otherwise
-strip it, so `.item-amount.item-amount-overridden` re-adds a
-`border-bottom` at higher specificity). Reverting the value back to the
-default removes the highlight again.
+strip them, so `.item-amount.item-amount-overridden` /
+`.item-amount.item-amount-under-recommended` re-add just a `border-bottom`
+at higher specificity).
 
 ### Item provenance (the ⓘ info icon)
 
@@ -291,6 +301,17 @@ adding another border. On screen, `.category` gets an optional soft
 shadows don't read well against a dark page, and always `none` for print)
 if a category needs to visually separate from the page — an alternative to
 an outline, not a replacement rule structure.
+
+The left-edge accent stripe's color depends on state: green for
+*eingepackt*, `--color-warning` (a warm gold) for *nicht_benoetigt*, and
+`--color-state-morgen` (a warm orange, deliberately a different hue from
+`--color-warning` despite both being in the "orange family") for the state
+labeled **Vor Abfahrt** in the UI ("get this right before leaving" — the
+internal `morgen` value and `TomorrowList.vue` name are unchanged, only the
+user-facing label changed). `--color-warning` is shared with the
+under-recommended amount highlight above, since both represent the same
+"pay attention here" semantic, while Vor Abfahrt is a plain reminder, not a
+warning — hence the different hue.
 
 ## Printing
 

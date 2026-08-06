@@ -8,9 +8,14 @@
   --color-accent-contrast: #ffffff;
 
   --color-state-eingepackt: #2f6f4f;
-  --color-state-nicht-benoetigt: #8a8579;
   --color-state-morgen: #b5651d;
   --color-state-morgen-bg: #fbe9d7;
+
+  /* Warning tone: "Nicht benötigt" and an under-recommended packed amount
+     both use this — a warm gold, deliberately shifted more yellow than
+     --color-state-morgen so the two stay visually distinct despite both
+     being "orange family". */
+  --color-warning: #ca8a04;
 
   --color-pflicht: #b3261e;
   --color-optional: #6b6558;
@@ -37,9 +42,9 @@
     --color-accent-contrast: #0d1410;
 
     --color-state-eingepackt: #6bbf8e;
-    --color-state-nicht-benoetigt: #9a978d;
     --color-state-morgen: #e2a25c;
     --color-state-morgen-bg: #3a2a14;
+    --color-warning: #facc15;
 
     --color-pflicht: #e2837c;
     --color-optional: #a3a29b;
@@ -58,9 +63,9 @@
   --color-accent: #6bbf8e;
   --color-accent-contrast: #0d1410;
   --color-state-eingepackt: #6bbf8e;
-  --color-state-nicht-benoetigt: #9a978d;
   --color-state-morgen: #e2a25c;
   --color-state-morgen-bg: #3a2a14;
+  --color-warning: #facc15;
   --color-pflicht: #e2837c;
   --color-optional: #a3a29b;
   --color-zebra-bg: #262830;
@@ -76,9 +81,9 @@
   --color-accent: #2f6f4f;
   --color-accent-contrast: #ffffff;
   --color-state-eingepackt: #2f6f4f;
-  --color-state-nicht-benoetigt: #8a8579;
   --color-state-morgen: #b5651d;
   --color-state-morgen-bg: #fbe9d7;
+  --color-warning: #ca8a04;
   --color-pflicht: #b3261e;
   --color-optional: #6b6558;
   --color-zebra-bg: #edebe3;
@@ -305,7 +310,7 @@ body {
 }
 
 .item-row.state-nicht_benoetigt {
-  border-left-color: var(--color-state-nicht-benoetigt);
+  border-left-color: var(--color-warning);
 }
 
 .item-row.state-nicht_benoetigt .item-name {
@@ -394,6 +399,15 @@ body {
 .item-amount-overridden {
   border: 2px solid var(--color-accent);
   color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* A stronger warning once the amount drops below quantityMin — you may not
+   be bringing enough. Same warning tone as "Nicht benötigt", takes
+   precedence over the plain "changed" highlight above. */
+.item-amount-under-recommended {
+  border: 2px solid var(--color-warning);
+  color: var(--color-warning);
   font-weight: 700;
 }
 
@@ -582,8 +596,8 @@ body {
        the print palette) — the alternating rows are the point on paper. */
     --color-zebra-bg: #ededed;
     --color-state-eingepackt: #2f6f4f;
-    --color-state-nicht-benoetigt: #8a8579;
     --color-state-morgen: #b5651d;
+    --color-warning: #ca8a04;
     --color-accent: #2f6f4f;
     /* No drop shadows on paper — the booktabs-style rules on .category do
        the job of separating tables without needing an outline or shadow. */
@@ -627,6 +641,11 @@ body {
   .item-amount.item-amount-overridden {
     border: none;
     border-bottom: 2px solid var(--color-accent);
+  }
+
+  .item-amount.item-amount-under-recommended {
+    border: none;
+    border-bottom: 2px solid var(--color-warning);
   }
 
   .progress {
