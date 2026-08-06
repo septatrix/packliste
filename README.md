@@ -252,17 +252,24 @@ those variables under the same conditions used everywhere else in the app
 (OS `prefers-color-scheme: dark`, unless overridden to light; or an explicit
 `data-theme="dark"` override, regardless of OS).
 
-## Table layout, not cards
+## Table layout: booktabs, not boxes
 
-Each category renders as a plain table rather than a stack of individually
-bordered/rounded "cards": a header row, then flush item rows separated by a
-thin bottom border, with alternating row backgrounds (`:nth-of-type(even)`
-on `.item-row`, using a dedicated `--color-zebra-bg` variable rather than
-reusing the page background, so it stays visually distinct in both themes
-and survives the print color overrides below). The four-way state, which
-used to fill the whole row with a tinted background, is now a 3px left-edge
-accent stripe instead — keeping the state glanceable without breaking the
-table look.
+Each category renders as a table styled after LaTeX's `booktabs` package
+rather than a bordered/rounded "card" or a full grid of cell borders: no
+outline around the table, no rule between every row — just a heavy rule
+above the header (`\toprule`), a light rule below it (`\midrule`), and a
+heavy rule closing the table (`\bottomrule`). Row separation comes entirely
+from alternating backgrounds (`:nth-of-type(even)` on `.item-row`, using a
+dedicated `--color-zebra-bg` variable rather than reusing the page
+background, so it stays visually distinct in both themes and survives the
+print color overrides below) — no per-row lines needed on top of that. The
+four-way state, which used to fill the whole row with a tinted background,
+is a 3px left-edge accent stripe instead, keeping it glanceable without
+adding another border. On screen, `.category` gets an optional soft
+`box-shadow` (a `--shadow-elevation` variable, `none` in dark mode where
+shadows don't read well against a dark page, and always `none` for print)
+if a category needs to visually separate from the page — an alternative to
+an outline, not a replacement rule structure.
 
 ## Printing
 
@@ -277,7 +284,9 @@ than a screenshot of the UI:
   white, since alternating rows are the whole point of a printed table.
   `print-color-adjust: exact` on `.item-row` ensures the stripe actually
   prints instead of being suppressed by the browser's default
-  no-backgrounds print economy mode.
+  no-backgrounds print economy mode. `--shadow-elevation` is forced to
+  `none` — no shadow (and no outline in the first place) on paper, only
+  the booktabs-style rules.
 - Hides the four-way state buttons (meaningless on paper) and replaces each
   item row with a `☐` checkbox glyph via `::before`, so the printout is a
   real pen-and-paper checklist.

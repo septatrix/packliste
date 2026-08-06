@@ -18,6 +18,11 @@
   /* Alternating row background for the table-style item list. */
   --color-zebra-bg: #edebe3;
 
+  /* Optional soft elevation in place of an outline (see .category); a
+     shadow doesn't read well against a dark page background, so it's
+     turned off entirely in the dark variants below. */
+  --shadow-elevation: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+
   --radius: 0.5rem;
 }
 
@@ -40,6 +45,7 @@
     --color-optional: #a3a29b;
 
     --color-zebra-bg: #262830;
+    --shadow-elevation: none;
   }
 }
 
@@ -58,6 +64,7 @@
   --color-pflicht: #e2837c;
   --color-optional: #a3a29b;
   --color-zebra-bg: #262830;
+  --shadow-elevation: none;
 }
 
 :root[data-theme='light'] {
@@ -75,6 +82,7 @@
   --color-pflicht: #b3261e;
   --color-optional: #6b6558;
   --color-zebra-bg: #edebe3;
+  --shadow-elevation: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 * {
@@ -245,23 +253,25 @@ body {
   column-gap: 1.25rem;
 }
 
-/* Each category renders as a plain table: a header row plus flush,
-   alternating-color item rows — deliberately not a set of individual
-   rounded "cards", so it reads as a familiar report-style table both on
-   screen and (especially) on paper. */
+/* Each category renders as a booktabs-style table: no outline around it
+   and no rule between every row (the zebra stripe alone separates rows) —
+   just a heavy rule above the header, a light rule below it, and a heavy
+   rule closing the table, the same three-rule convention LaTeX's booktabs
+   package uses instead of a full grid of borders. On screen, an optional
+   soft shadow (disabled for print — see below) can stand in for an outline
+   if a category needs to visually stand apart from the page. */
 .category {
   break-inside: avoid-column;
-  margin-bottom: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: calc(var(--radius) * 0.6);
-  overflow: hidden;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-elevation);
 }
 
 .category h2 {
   font-size: 0.95rem;
   margin: 0;
-  padding: 0.35rem 0.6rem;
+  padding: 0.4rem 0.5rem 0.35rem;
   background: var(--color-surface);
+  border-top: 2px solid var(--color-text);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -272,7 +282,6 @@ body {
   gap: 0.4rem;
   padding: 0.3rem 0.5rem;
   font-size: 0.85rem;
-  border-bottom: 1px solid var(--color-border);
   border-left: 3px solid transparent;
   background: var(--color-surface);
   /* Ensure the zebra stripe actually prints instead of being suppressed
@@ -286,7 +295,7 @@ body {
 }
 
 .item-row:last-of-type {
-  border-bottom: none;
+  border-bottom: 2px solid var(--color-text);
 }
 
 /* State is shown as a left-edge accent stripe rather than a filled
@@ -565,6 +574,9 @@ body {
     --color-state-eingepackt: #2f6f4f;
     --color-state-nicht-benoetigt: #8a8579;
     --color-state-morgen: #b5651d;
+    /* No drop shadows on paper — the booktabs-style rules on .category do
+       the job of separating tables without needing an outline or shadow. */
+    --shadow-elevation: none;
   }
 
   .app {
