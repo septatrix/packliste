@@ -4,6 +4,9 @@ import vue from '@astrojs/vue';
 
 // https://astro.build/config
 export default defineConfig({
+  // GitHub Pages serves project sites from a `/<repo>/` subpath.
+  site: 'https://septatrix.github.io',
+  base: '/packliste',
   integrations: [
     vue({
       // Enable Vue's experimental Vapor mode compilation. Because Astro
