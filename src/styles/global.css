@@ -1,0 +1,713 @@
+:root {
+  --color-bg: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-border: #ddd8d0;
+  --color-text: #1f1d1a;
+  --color-text-muted: #6b6558;
+  --color-accent: #2f6f4f;
+  --color-accent-contrast: #ffffff;
+
+  --color-state-eingepackt: #2f6f4f;
+  --color-state-morgen: #b5651d;
+  --color-state-morgen-bg: #fbe9d7;
+
+  /* Warning tone: "Nicht benötigt" and an under-recommended packed amount
+     both use this — a warm gold, deliberately shifted more yellow than
+     --color-state-morgen so the two stay visually distinct despite both
+     being "orange family". */
+  --color-warning: #ca8a04;
+
+  --color-pflicht: #b3261e;
+  --color-optional: #6b6558;
+
+  /* Alternating row background for the table-style item list. */
+  --color-zebra-bg: #edebe3;
+
+  /* Optional soft elevation in place of an outline (see .category); a
+     shadow doesn't read well against a dark page background, so it's
+     turned off entirely in the dark variants below. */
+  --shadow-elevation: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #17181a;
+    --color-surface: #212327;
+    --color-border: #33353a;
+    --color-text: #ecece9;
+    --color-text-muted: #a3a29b;
+    --color-accent: #6bbf8e;
+    --color-accent-contrast: #0d1410;
+
+    --color-state-eingepackt: #6bbf8e;
+    --color-state-morgen: #e2a25c;
+    --color-state-morgen-bg: #3a2a14;
+    --color-warning: #facc15;
+
+    --color-pflicht: #e2837c;
+    --color-optional: #a3a29b;
+
+    --color-zebra-bg: #262830;
+    --shadow-elevation: none;
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #17181a;
+  --color-surface: #212327;
+  --color-border: #33353a;
+  --color-text: #ecece9;
+  --color-text-muted: #a3a29b;
+  --color-accent: #6bbf8e;
+  --color-accent-contrast: #0d1410;
+  --color-state-eingepackt: #6bbf8e;
+  --color-state-morgen: #e2a25c;
+  --color-state-morgen-bg: #3a2a14;
+  --color-warning: #facc15;
+  --color-pflicht: #e2837c;
+  --color-optional: #a3a29b;
+  --color-zebra-bg: #262830;
+  --shadow-elevation: none;
+}
+
+:root[data-theme='light'] {
+  --color-bg: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-border: #ddd8d0;
+  --color-text: #1f1d1a;
+  --color-text-muted: #6b6558;
+  --color-accent: #2f6f4f;
+  --color-accent-contrast: #ffffff;
+  --color-state-eingepackt: #2f6f4f;
+  --color-state-morgen: #b5651d;
+  --color-state-morgen-bg: #fbe9d7;
+  --color-warning: #ca8a04;
+  --color-pflicht: #b3261e;
+  --color-optional: #6b6558;
+  --color-zebra-bg: #edebe3;
+  --shadow-elevation: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+}
+
+.app {
+  /* A4 width as a reference point: wide enough for a two-column list. */
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.app-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.app-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+}
+
+.app-header p {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-muted);
+}
+
+.hint {
+  color: var(--color-text-muted);
+}
+
+.inspect-button {
+  flex: none;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* --- Parameter form --- */
+
+.parameter-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.field select,
+.field input {
+  padding: 0.5rem;
+  border-radius: calc(var(--radius) * 0.6);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.toggle-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-chip.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+
+.toggle-chip:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.toggle-chip-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Packing list --- */
+
+.progress {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+/* Print-like two-column flow (CSS multi-column, not JS-balanced) so a
+   category's items always stay together within one column. */
+.categories {
+  column-count: 2;
+  column-gap: 1.25rem;
+}
+
+/* Each category renders as a booktabs-style table: no outline around it
+   and no rule between every row (the zebra stripe alone separates rows) —
+   just a heavy rule above the header, a light rule below it, and a heavy
+   rule closing the table, the same three-rule convention LaTeX's booktabs
+   package uses instead of a full grid of borders. On screen, an optional
+   soft shadow (disabled for print — see below) can stand in for an outline
+   if a category needs to visually stand apart from the page. */
+.category {
+  break-inside: avoid-column;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-elevation);
+}
+
+.category h2 {
+  font-size: 0.95rem;
+  margin: 0;
+  padding: 0.4rem 0.5rem 0.35rem;
+  background: var(--color-surface);
+  border-top: 2px solid var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+  border-left: 3px solid transparent;
+  background: var(--color-surface);
+  /* Ensure the zebra stripe actually prints instead of being suppressed
+     by the browser's default "no backgrounds" print economy mode. */
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.item-row:nth-of-type(even) {
+  background: var(--color-zebra-bg);
+}
+
+.item-row:last-of-type {
+  border-bottom: 2px solid var(--color-text);
+}
+
+/* State is shown as a left-edge accent stripe rather than a filled
+   background, keeping the table look intact. */
+.item-row.state-eingepackt {
+  border-left-color: var(--color-state-eingepackt);
+}
+
+.item-row.state-nicht_benoetigt {
+  border-left-color: var(--color-warning);
+}
+
+.item-row.state-nicht_benoetigt .item-name {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.item-row.state-morgen {
+  border-left-color: var(--color-state-morgen);
+}
+
+.item-info {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.item-icon {
+  flex: none;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.item-importance-dot {
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--color-optional);
+}
+
+.item-importance-dot.importance-pflicht {
+  background: var(--color-pflicht);
+}
+
+.item-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.item-info-icon {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  cursor: help;
+}
+
+.item-info-icon:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.item-quantity {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.item-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: none;
+}
+
+.item-amount {
+  width: 2.4rem;
+  padding: 0.1rem 0.2rem;
+  text-align: center;
+  border-radius: calc(var(--radius) * 0.5);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.8rem;
+}
+
+/* Highlights the amount once it's been changed away from the suggested
+   default (quantityMax) — a thicker accent-colored border plus bold,
+   accent-colored text, both of which print fine without needing a
+   background-color print override. */
+.item-amount-overridden {
+  border: 2px solid var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* A stronger warning once the amount drops below quantityMin — you may not
+   be bringing enough. Same warning tone as "Nicht benötigt", takes
+   precedence over the plain "changed" highlight above. */
+.item-amount-under-recommended {
+  border: 2px solid var(--color-warning);
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+.item-state {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.state-button {
+  font-size: 0.85rem;
+  line-height: 1;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.state-button.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+
+/* --- Tomorrow list --- */
+
+.tomorrow-list {
+  border: 1px dashed var(--color-state-morgen);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: var(--color-state-morgen-bg);
+}
+
+.tomorrow-list h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.tomorrow-list ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+@media (max-width: 40rem) {
+  .categories {
+    column-count: 1;
+  }
+}
+
+@media (max-width: 26rem) {
+  .item-row {
+    flex-wrap: wrap;
+  }
+
+  .item-info {
+    flex-basis: 100%;
+  }
+}
+
+/* --- Preset inspector --- */
+
+.inspector-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.inspector-modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 50rem;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+}
+
+.inspector-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.inspector-tab {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.inspector-tab.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+
+.inspector-close {
+  flex: none;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.inspector-code {
+  overflow: auto;
+}
+
+.inspector-code pre.shiki {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* Shiki emits dual-theme HTML: the base color/background is the light
+   theme, with a --shiki-dark(-bg) variable holding the dark variant. Force
+   the dark variant under the same conditions the rest of the app uses —
+   OS dark scheme unless explicitly overridden to light, or an explicit
+   dark override regardless of OS. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .shiki,
+  :root:not([data-theme='light']) .shiki span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+  }
+}
+
+:root[data-theme='dark'] .shiki,
+:root[data-theme='dark'] .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+
+/* --- Print --- */
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  /* Force a plain light/high-contrast palette regardless of the viewer's
+     theme or OS color scheme — printing a dark background wastes toner
+     and some printers won't render it as intended anyway. Repeats the
+     [data-theme] selectors so this wins on specificity, not just source
+     order, against the theme overrides above. */
+  :root,
+  :root[data-theme='dark'],
+  :root[data-theme='light'] {
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-text: #000000;
+    --color-text-muted: #333333;
+    --color-border: #000000;
+    --color-state-morgen-bg: #ffffff;
+    /* Keep the zebra stripe visible (not forced to white like the rest of
+       the print palette) — the alternating rows are the point on paper. */
+    --color-zebra-bg: #ededed;
+    --color-state-eingepackt: #2f6f4f;
+    --color-state-morgen: #b5651d;
+    --color-warning: #ca8a04;
+    --color-accent: #2f6f4f;
+    /* No drop shadows on paper — the booktabs-style rules on .category do
+       the job of separating tables without needing an outline or shadow. */
+    --shadow-elevation: none;
+  }
+
+  .app {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* The interactive four-way state control means nothing on paper; a
+     hand-drawable checkbox in front of each item does. */
+  .item-state {
+    display: none;
+  }
+
+  .item-row::before {
+    content: '☐';
+    flex: none;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .item-amount {
+    border: none;
+    background: transparent;
+    padding: 0;
+    width: auto;
+    -moz-appearance: textfield;
+  }
+
+  .item-amount::-webkit-inner-spin-button,
+  .item-amount::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Keep the override visible on paper too — a plain underline rather
+     than the on-screen box, consistent with the no-outlines print style. */
+  .item-amount.item-amount-overridden {
+    border: none;
+    border-bottom: 2px solid var(--color-accent);
+  }
+
+  .item-amount.item-amount-under-recommended {
+    border: none;
+    border-bottom: 2px solid var(--color-warning);
+  }
+
+  .progress {
+    display: none;
+  }
+
+  .parameter-form {
+    border: none;
+    padding: 0;
+    background: transparent;
+  }
+
+  .parameter-form select,
+  .parameter-form input {
+    border: none;
+    background: transparent;
+    padding: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    font-weight: 600;
+  }
+
+  .parameter-form input[type='date']::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+
+  /* Toggle chips print as a plain text summary of what was actually
+     selected — unchecked options are dropped instead of shown unchecked. */
+  .toggle-chip {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin-right: 0.6rem;
+    font-weight: 600;
+  }
+
+  .toggle-chip:not(.active) {
+    display: none;
+  }
+
+  .toggle-chip-input {
+    display: none;
+  }
+
+  /* No hover tooltip on paper, so a truncated name would lose information
+     permanently — let it wrap instead of ellipsizing for print. */
+  .item-name {
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+  }
+
+  .category,
+  .item-row {
+    break-inside: avoid;
+  }
+
+  .state-button,
+  .hint,
+  .inspect-button,
+  .inspector-overlay,
+  .item-info-icon {
+    display: none;
+  }
+}

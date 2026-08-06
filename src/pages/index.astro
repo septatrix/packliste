@@ -1,0 +1,50 @@
+---
+import { codeToHtml } from 'shiki';
+import PackingApp from '../components/PackingApp.vue';
+import { activityPresets, base } from '../presets';
+import '../styles/global.css';
+
+// Raw source of every preset module, keyed by file path, for the
+// "inspect presets" modal. Using import.meta.glob (rather than listing
+// each preset file by hand) means a newly added preset's source shows up
+// automatically as soon as it's registered in presets/index.ts.
+const rawPresetSources = import.meta.glob('../presets/*.ts', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>;
+
+function sourceForPresetId(id: string): string {
+  const entry = Object.entries(rawPresetSources).find(([path]) => path.endsWith(`/${id}.ts`));
+  return entry?.[1] ?? '';
+}
+
+const allPresets = [base, ...activityPresets];
+const presetCode = await Promise.all(
+  allPresets.map(async (preset) => ({
+    id: preset.id,
+    name: preset.name,
+    html: await codeToHtml(sourceForPresetId(preset.id), {
+      lang: 'typescript',
+      themes: { light: 'github-light', dark: 'github-dark' },
+    }),
+  })),
+);
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%B3%3C/text%3E%3C/svg%3E" />
+    <title>Packliste – Reise- und Urlaubs-Packlisten</title>
+    <meta
+      name="description"
+      content="Erstelle interaktive Packlisten für deine Reise basierend auf Aktivität, Klima, Reisedauer und mehr."
+    />
+  </head>
+  <body>
+    <PackingApp client:only="vue" presetCode={presetCode} />
+  </body>
+</html>
