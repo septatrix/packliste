@@ -18,7 +18,7 @@ const tomorrowItems = computed(() =>
     <ul>
       <li v-for="{ item, amount } in tomorrowItems" :key="item.id">
         <span aria-hidden="true">{{ item.icon }}</span>
-        {{ item.name }} <span class="item-quantity">×{{ amount }}</span>
+        {{ item.name }} <span v-if="item.quantityMax !== undefined" class="item-quantity">×{{ amount }}</span>
       </li>
     </ul>
   </section>

@@ -38,7 +38,9 @@ const skifahren: PresetDefinition = {
         icon: '🕶️',
       },
       {
-        id: 'ski-sonnencreme-lsf',
+        // Geteilte Item-ID mit base.ts/segeln.ts: eine Reise braucht nur
+        // eine Sonnencreme-Empfehlung, nicht mehrere nebeneinander.
+        id: 'shared-sonnencreme',
         name: 'Sonnencreme mit hohem LSF',
         category: 'Hygiene',
         importance: 'pflicht',
@@ -75,7 +77,6 @@ const skifahren: PresetDefinition = {
         name: 'Skipass / Liftticket (vor Ort besorgen)',
         category: 'Sonstiges',
         importance: 'optional',
-        quantity: 1,
         icon: '🎫',
       });
     }

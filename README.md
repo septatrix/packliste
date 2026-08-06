@@ -16,7 +16,11 @@ preset an item came from and how its quantity was computed. Track each
 item as *offen*, *eingepackt*, *nicht benötigt*, or *für morgen* (things
 still needed that get collected on a separate "grab before leaving" list),
 and override the computed quantity per item if you want to pack a
-different amount than suggested. All state is written to `localStorage`;
+different amount than suggested — some items (an ID card, a driver's
+license) skip the amount input entirely since owning more than one rarely
+makes sense. Items suggested by more than one selected preset (a first-aid
+kit, sunscreen, a tent) show up once, not once per preset. All state is
+written to `localStorage`;
 there is no backend — the whole app is a static site. The list renders as
 a plain table (flush rows, alternating background, no per-item "card"
 look) in a print-like two-column layout (A4 width as the reference point)
@@ -164,13 +168,62 @@ The output of every `resolveItems()` call is validated at runtime against
 `ItemSchema` (Zod) in `src/lib/engine.ts`, so a malformed preset fails loudly
 with a clear error instead of silently corrupting the list.
 
+### Items without a quantity
+
+`Item.quantity` is optional. Omit it entirely for items where a count is
+meaningless because you only ever own a single one at a time — an ID card,
+a passport, a driver's license, a wallet. `ItemRow` then skips the amount
+input altogether instead of showing a meaningless "×1" stepper; the four-way
+state control (offen/eingepackt/nicht benötigt/vor Abfahrt) still applies as
+normal. Every other computed field that depends on quantity
+(`quantityLabel`/`quantityMin`/`quantityMax` on the resolved item) is
+correspondingly optional and simply absent for these items.
+
+### Cross-preset item deduplication
+
+Several presets independently suggest the same real-world item — a first-aid
+kit (Wandern, Camping, Motorradtour), sunscreen (base, Skifahren, Segeln), a
+tent or sleeping bag (Wandern, Camping, Sommerlager). Picking several of
+those activities for one trip shouldn't produce duplicate rows for the same
+physical thing.
+
+The convention: give the item the **same id, prefixed `shared-`**, in every
+preset that suggests it (e.g. `shared-erste-hilfe-set`, `shared-sonnencreme`,
+`shared-zelt`). `resolveList()` (`src/lib/engine.ts`) merges items sharing an
+id across *different* presets into a single row:
+
+- **quantity** — the elementwise max of each side's min/max (so if one
+  preset suggests 1 and another suggests 1–2, the merged item shows 1–2).
+  If either side has no quantity at all (see above), the merged item has
+  none either — a quantity-less assertion is treated as "stickier" than any
+  numeric suggestion, since it means "you only own one of these, full stop."
+- **importance** — `pflicht` wins if *either* source says so.
+- **name / icon / category / note** — the *last* contributing preset (in
+  registration order) wins. This is meaningful because `base` is always
+  merged in first, so an activity's more specific naming (e.g. Skifahren's
+  "Sonnencreme mit hohem LSF" vs. base's plain "Sonnencreme") naturally
+  overrides the generic base version rather than the other way around.
+- **provenance** — `sourceIds`/`sourceNames` accumulate every contributing
+  preset, so the ⓘ info icon correctly shows "Aus Presets: Wandern,
+  Motorradtour" instead of just the first or last one.
+
+A single preset repeating *its own* id within one `resolveItems()` call is
+still always a bug (never intentional) and throws, same as before — the
+`shared-` convention only changes how *cross-preset* collisions are treated.
+
+An id outside the `shared-` namespace that still collides between two
+presets is almost certainly an accidental collision, not an intentional
+merge — `validate-presets.ts`'s naming-convention check (below) catches this
+case and fails loudly rather than letting `resolveList()` silently merge two
+unrelated items.
+
 ### Validating presets
 
 ```sh
 pnpm validate:presets
 ```
 
-Two passes, deliberately not one exhaustive cross product — which item ids
+Three passes, deliberately not one exhaustive cross product — which item ids
 a preset can produce doesn't depend on the specific parameter *values*
 (ids are static strings), so crossing every preset *subset* with the full
 parameter matrix would be wasted work that gets exponentially slower with
@@ -180,12 +233,22 @@ every new preset (`2^presets`):
    parameter matrix — every climate subset (the powerset of all 4 values,
    including "none") × travel × destination × gender × several day counts,
    the latter three including `undefined`/"keine Angabe" — catching thrown
-   exceptions and schema violations. ~24,600 combinations.
-2. Every non-empty *subset* of activity presets (all `2^presets - 1` of
+   exceptions and schema violations, and recording every id each preset can
+   ever produce. ~24,600 combinations.
+2. A naming-convention check: any id *not* prefixed `shared-` must be
+   globally unique across presets. Two presets sharing an id is only valid
+   as a deliberate `shared-` merge (see [Cross-preset item
+   deduplication](#cross-preset-item-deduplication) above) — anything else
+   colliding is almost certainly an accidental id clash that would otherwise
+   silently (and wrongly) merge two unrelated items.
+3. Every non-empty *subset* of activity presets (all `2^presets - 1` of
    them, so this part does scale with preset count, but cheaply) against a
    handful of parameter profiles chosen to each maximize which conditional
-   items are active — catching item-id collisions between two presets that
-   only surface when both are selected together.
+   items are active — exercising `resolveList()`'s actual merge path
+   (quantity/importance combination) for runtime errors, without re-running
+   the full parameter matrix per subset (unneeded: which ids exist doesn't
+   depend on the specific parameter values, only on which conditional
+   branches are active).
 
 Runs in a few seconds regardless of how many presets are registered.
 Useful as a quick regression check after editing a preset.
@@ -205,9 +268,11 @@ Useful as a quick regression check after editing a preset.
   math isn't affected by the browser's local timezone.
 - `src/lib/engine.ts` — `resolveList(params, presets)` runs each preset's
   `resolveItems`, validates the output, resolves each item's icon (its own
-  or the category fallback), records which preset produced it
-  (`sourceId`/`sourceName`, for the info icon) and groups items by category
-  in a fixed display order.
+  or the category fallback), records which preset(s) produced it
+  (`sourceIds`/`sourceNames`, for the info icon — arrays, since an item can
+  be merged from more than one preset, see [Cross-preset item
+  deduplication](#cross-preset-item-deduplication) below) and groups items
+  by category in a fixed display order.
 - `src/lib/storage.ts` — `localStorage` persistence for the trip selection
   (dates included) and per-item progress (`{ state, amount }`).
 - `src/presets/` — the preset modules described above.
@@ -248,8 +313,10 @@ at higher specificity).
 ### Item provenance (the ⓘ info icon)
 
 Every item has a small ⓘ icon (`ItemRow.vue`) whose tooltip shows which
-preset produced it (`item.sourceName`, tracked per-item in `resolveList()`)
-and, when present, `item.note` — a short human-readable explanation of how
+preset(s) produced it (`item.sourceNames`, tracked per-item in
+`resolveList()` — "Aus Preset: X" for one, "Aus Presets: X, Y" if the item
+was merged from several, see below) and, when present, `item.note` — a
+short human-readable explanation of how
 the quantity was computed. `Item.note` is optional and author-supplied, not
 reconstructed after the fact (guessing from the resolved number would risk
 showing a wrong explanation): presets add it alongside a `perDay`/range

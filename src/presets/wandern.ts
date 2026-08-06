@@ -9,15 +9,12 @@ const wandern: PresetDefinition = {
   resolveItems(params): Item[] {
     const items: Item[] = [
       { id: 'wandern-schuhe', name: 'Wanderschuhe', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🥾' },
-      { id: 'wandern-rucksack', name: 'Wanderrucksack', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🎒' },
-      {
-        id: 'wandern-trinkflasche',
-        name: 'Trinkflasche / Trinksystem',
-        category: 'Ausrüstung',
-        importance: 'pflicht',
-        quantity: 1,
-        icon: '💧',
-      },
+      // Geteilte Item-IDs (shared-*): dieselbe Ausrüstung wird auch von
+      // anderen Presets vorgeschlagen (Sommerlager, Camping, Segeln) — eine
+      // Reise mit mehreren dieser Aktivitäten braucht trotzdem nur einen
+      // Rucksack, eine Trinkflasche usw., nicht mehrere nebeneinander.
+      { id: 'shared-rucksack', name: 'Wanderrucksack', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🎒' },
+      { id: 'shared-trinkflasche', name: 'Trinkflasche / Trinksystem', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '💧' },
       {
         id: 'wandern-wanderhose',
         name: 'Wanderhose',
@@ -45,16 +42,16 @@ const wandern: PresetDefinition = {
         icon: '🧦',
         note: perDayNote(1, params.days),
       },
-      { id: 'wandern-erste-hilfe', name: 'Erste-Hilfe-Set', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🩹' },
+      { id: 'shared-erste-hilfe-set', name: 'Erste-Hilfe-Set', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🩹' },
       { id: 'wandern-karte', name: 'Wanderkarte / GPS-Gerät', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🗺️' },
-      { id: 'wandern-stirnlampe', name: 'Stirnlampe', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🔦' },
+      { id: 'shared-taschenlampe', name: 'Stirnlampe', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🔦' },
       { id: 'wandern-wanderstoecke', name: 'Wanderstöcke', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🦯' },
     ];
 
     if (params.climate.includes('warm')) {
       items.push(
         { id: 'wandern-sonnenhut', name: 'Sonnenhut / Cap', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧢' },
-        { id: 'wandern-insektenschutz', name: 'Insektenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
+        { id: 'shared-insektenschutz', name: 'Insektenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
       );
     }
 
@@ -68,10 +65,10 @@ const wandern: PresetDefinition = {
     // Mehrtageswanderung: Übernachtungsausrüstung wird relevant.
     if (params.days >= 2) {
       items.push(
-        { id: 'wandern-zelt', name: 'Zelt / Biwaksack', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '⛺' },
-        { id: 'wandern-schlafsack', name: 'Schlafsack', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🛌' },
-        { id: 'wandern-isomatte', name: 'Isomatte', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🏕️' },
-        { id: 'wandern-kocher', name: 'Kocher + Gaskartusche', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🍳' },
+        { id: 'shared-zelt', name: 'Zelt / Biwaksack', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '⛺' },
+        { id: 'shared-schlafsack', name: 'Schlafsack', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🛌' },
+        { id: 'shared-isomatte', name: 'Isomatte', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🏕️' },
+        { id: 'shared-kocher', name: 'Kocher + Gaskartusche', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🍳' },
       );
     }
 

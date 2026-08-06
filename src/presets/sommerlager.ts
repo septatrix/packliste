@@ -85,12 +85,12 @@ const sommerlager: PresetDefinition = {
       },
       { id: 'lager-duschzeug', name: 'Duschgel & Shampoo', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '🧴' },
       { id: 'lager-kamm', name: 'Kamm / Bürste', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '💇' },
-      { id: 'lager-mueckenspray', name: 'Insektenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
+      { id: 'shared-insektenschutz', name: 'Insektenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
       { id: 'lager-foehn', name: 'Föhn', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '💨' },
       { id: 'lager-zahnspange', name: 'Zubehör für Zahnspange', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦷' },
 
       // Geschirr (Ausrüstung)
-      { id: 'lager-trinkflasche', name: 'Trinkflasche (auf Dichtigkeit prüfen)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '💧' },
+      { id: 'shared-trinkflasche', name: 'Trinkflasche (auf Dichtigkeit prüfen)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '💧' },
       { id: 'lager-besteck', name: 'Besteck', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🍴' },
       {
         id: 'lager-teller',
@@ -106,11 +106,12 @@ const sommerlager: PresetDefinition = {
       { id: 'lager-trockentuch', name: 'Trockentuch', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🧻' },
 
       // Sonstiges / weitere Ausrüstung
-      { id: 'lager-rucksack', name: 'Rucksack', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🎒' },
-      { id: 'lager-taschenlampe', name: 'Taschenlampe mit Ersatzbatterien', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🔦' },
-      { id: 'lager-sonnenbrille', name: 'Sonnenbrille', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🕶️' },
+      { id: 'shared-rucksack', name: 'Rucksack', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🎒' },
+      { id: 'shared-taschenlampe', name: 'Taschenlampe mit Ersatzbatterien', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🔦' },
+      { id: 'shared-sonnenbrille', name: 'Sonnenbrille', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🕶️' },
       { id: 'lager-ersatzbrille', name: 'Ersatzbrille', category: 'Sonstiges', importance: 'optional', quantity: 1, icon: '👓' },
-      { id: 'lager-brustbeutel', name: 'Brustbeutel für das Taschengeld', category: 'Sonstiges', importance: 'optional', quantity: 1, icon: '💰' },
+      // Kein `quantity`: ein Brustbeutel ist wie eine Geldbörse, man hat nur einen.
+      { id: 'lager-brustbeutel', name: 'Brustbeutel für das Taschengeld', category: 'Sonstiges', importance: 'optional', icon: '💰' },
       {
         id: 'lager-schreibzeug',
         name: 'Schreibzeug / Briefmarken / Postkarten',
@@ -122,7 +123,7 @@ const sommerlager: PresetDefinition = {
       },
 
       // Nachtzeug – gemeinsamer Kern (unabhängig vom Geschlecht)
-      { id: 'lager-schlafsack', name: 'Schlafsack (warm; kein Sommerschlafsack)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛌' },
+      { id: 'shared-schlafsack', name: 'Schlafsack (warm; kein Sommerschlafsack)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛌' },
       { id: 'lager-warme-decke', name: 'Warme Decke', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛏️' },
       { id: 'lager-kopfkissen', name: 'Kopfkissen', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛏️' },
       { id: 'lager-spannbettlaken', name: 'Spannbettlaken', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛏️' },
@@ -134,7 +135,7 @@ const sommerlager: PresetDefinition = {
     // der beiden zusätzlichen Varianten.
     if (matchesGender(params.gender, 'maennlich')) {
       items.push(
-        { id: 'lager-isomatte', name: 'Isomatte', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🏕️' },
+        { id: 'shared-isomatte', name: 'Isomatte', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🏕️' },
         { id: 'lager-luftmatratze', name: 'Luftmatratze mit Pumpe', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🏕️' },
         { id: 'lager-trainingsanzug', name: 'Trainingsanzug (als Schlafanzug)', category: 'Kleidung', importance: 'optional', quantity: 1, icon: '🌙' },
       );

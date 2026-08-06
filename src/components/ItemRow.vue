@@ -13,10 +13,15 @@ const STATES: { value: ItemState; icon: string; label: string }[] = [
   { value: 'morgen', icon: '⏰', label: 'Vor Abfahrt' },
 ];
 
-// Shown in the info icon's tooltip: which preset this item came from, and
+const hasQuantity = computed(() => props.item.quantityMax !== undefined);
+
+// Shown in the info icon's tooltip: which preset(s) this item came from
+// (plural if the item was merged from more than one, see resolveList), and
 // (when available) how its suggested quantity was computed.
 const infoText = computed(() => {
-  const lines = [`Aus Preset: ${props.item.sourceName}`, `Empfehlung: ${props.item.quantityLabel}`];
+  const sourceLabel = props.item.sourceNames.length > 1 ? 'Aus Presets' : 'Aus Preset';
+  const lines = [`${sourceLabel}: ${props.item.sourceNames.join(', ')}`];
+  if (hasQuantity.value) lines.push(`Empfehlung: ${props.item.quantityLabel}`);
   if (props.item.note) lines.push(props.item.note);
   return lines.join('\n');
 });
@@ -28,7 +33,8 @@ const infoText = computed(() => {
 // - anything else changed (within the range, or above quantityMax): a
 //   plain "this was adjusted" highlight, nothing to worry about.
 const amountStatus = computed<'default' | 'under' | 'changed'>(() => {
-  if (props.progress.amount < props.item.quantityMin) return 'under';
+  if (!hasQuantity.value) return 'default';
+  if (props.progress.amount < props.item.quantityMin!) return 'under';
   if (props.progress.amount !== props.item.quantityMax) return 'changed';
   return 'default';
 });
@@ -59,6 +65,7 @@ function onAmountInput(event: Event) {
     </div>
     <div class="item-controls">
       <input
+        v-if="hasQuantity"
         class="item-amount"
         :class="{
           'item-amount-overridden': amountStatus === 'changed',

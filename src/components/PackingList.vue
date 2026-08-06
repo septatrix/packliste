@@ -22,7 +22,7 @@ const packedCount = computed(() =>
 );
 
 function progressFor(item: ResolvedItem): ItemProgress {
-  return props.itemProgress[item.id] ?? { state: 'offen', amount: item.quantityMax };
+  return props.itemProgress[item.id] ?? { state: 'offen', amount: item.quantityMax ?? 0 };
 }
 </script>
 

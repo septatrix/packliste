@@ -7,13 +7,13 @@ export interface ResolvedItem {
   category: Category;
   importance: Importance;
   icon: string;
-  /** Human-readable quantity suggestion, e.g. "7", "1" or "1–2". */
-  quantityLabel: string;
-  quantityMin: number;
-  quantityMax: number;
-  /** Which preset produced this item, for the info-icon tooltip. */
-  sourceId: string;
-  sourceName: string;
+  /** Human-readable quantity suggestion, e.g. "7", "1" or "1–2" — absent for singleton items (see Item.quantity). */
+  quantityLabel?: string;
+  quantityMin?: number;
+  quantityMax?: number;
+  /** Every preset that contributed to this item (usually one; more if merged, see resolveList). */
+  sourceIds: string[];
+  sourceNames: string[];
   /** Optional explanation of how quantityLabel was computed (see Item.note). */
   note?: string;
 }
@@ -43,12 +43,16 @@ const CATEGORY_ICONS: Record<Category, string> = {
   Sonstiges: '📦',
 };
 
+function formatMinMax(min: number, max: number): string {
+  return min === max ? String(min) : `${min}–${max}`;
+}
+
 function formatQuantity(quantity: Quantity): { label: string; min: number; max: number } {
   if (typeof quantity === 'number') {
     return { label: String(quantity), min: quantity, max: quantity };
   }
   const { min, max } = quantity;
-  return { label: min === max ? String(min) : `${min}–${max}`, min, max };
+  return { label: formatMinMax(min, max), min, max };
 }
 
 /**
@@ -56,9 +60,24 @@ function formatQuantity(quantity: Quantity): { label: string; min: number; max: 
  * defensively, and group everything by category in a fixed display order.
  * All inclusion logic (gender, climate, destination, travel, per-day vs.
  * per-trip quantities, ...) already happened inside the presets themselves.
+ *
+ * Two different presets are allowed — expected, even — to return an item
+ * with the *same* id: that's the convention for "this is genuinely the
+ * same real-world thing" (a shared first-aid kit, one bottle of
+ * sunscreen, ...), by giving both items a `shared-...` id. Such items are
+ * merged rather than duplicated: quantity is the elementwise max of both
+ * suggestions (you don't need two first-aid kits just because two
+ * activities each want one), importance is "pflicht" if either source
+ * says so, and the later preset's name/icon/category/note win (later
+ * presets are more activity-specific than `base`, which always resolves
+ * first). The info icon then discloses every contributing preset.
+ *
+ * A single preset repeating its *own* id within one `resolveItems()` call
+ * is a different situation — always an authoring mistake, never
+ * intentional — and still throws.
  */
 export function resolveList(params: Params, presets: PresetDefinition[]): ResolvedCategory[] {
-  const byCategory = new Map<Category, ResolvedItem[]>();
+  const merged = new Map<string, ResolvedItem>();
 
   for (const preset of presets) {
     let rawItems: unknown;
@@ -69,27 +88,66 @@ export function resolveList(params: Params, presets: PresetDefinition[]): Resolv
     }
 
     const items = z.array(ItemSchema).parse(rawItems);
+    const seenInThisPreset = new Set<string>();
+
     for (const item of items) {
-      const { label, min, max } = formatQuantity(item.quantity);
-      const resolved: ResolvedItem = {
+      if (seenInThisPreset.has(item.id)) {
+        throw new Error(`Preset "${preset.id}" liefert die Item-ID "${item.id}" mehrfach in einem einzigen Aufruf.`);
+      }
+      seenInThisPreset.add(item.id);
+
+      const quantity = item.quantity !== undefined ? formatQuantity(item.quantity) : undefined;
+      const existing = merged.get(item.id);
+
+      if (!existing) {
+        merged.set(item.id, {
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          importance: item.importance,
+          icon: item.icon ?? CATEGORY_ICONS[item.category],
+          quantityLabel: quantity?.label,
+          quantityMin: quantity?.min,
+          quantityMax: quantity?.max,
+          sourceIds: [preset.id],
+          sourceNames: [preset.name],
+          note: item.note,
+        });
+        continue;
+      }
+
+      // A quantity-less item ("no amount makes sense here") stays
+      // quantity-less even if merged with a source that did specify one —
+      // it's a stronger assertion ("this isn't a countable thing") than
+      // any specific number another preset happened to provide.
+      const mergedQuantity =
+        existing.quantityMin !== undefined && quantity !== undefined
+          ? { min: Math.max(existing.quantityMin, quantity.min), max: Math.max(existing.quantityMax!, quantity.max) }
+          : undefined;
+
+      merged.set(item.id, {
         id: item.id,
         name: item.name,
         category: item.category,
-        importance: item.importance,
+        importance: existing.importance === 'pflicht' || item.importance === 'pflicht' ? 'pflicht' : 'optional',
         icon: item.icon ?? CATEGORY_ICONS[item.category],
-        quantityLabel: label,
-        quantityMin: min,
-        quantityMax: max,
-        sourceId: preset.id,
-        sourceName: preset.name,
-        note: item.note,
-      };
-      const bucket = byCategory.get(item.category);
-      if (bucket) {
-        bucket.push(resolved);
-      } else {
-        byCategory.set(item.category, [resolved]);
-      }
+        quantityLabel: mergedQuantity ? formatMinMax(mergedQuantity.min, mergedQuantity.max) : undefined,
+        quantityMin: mergedQuantity?.min,
+        quantityMax: mergedQuantity?.max,
+        sourceIds: [...existing.sourceIds, preset.id],
+        sourceNames: [...existing.sourceNames, preset.name],
+        note: item.note ?? existing.note,
+      });
+    }
+  }
+
+  const byCategory = new Map<Category, ResolvedItem[]>();
+  for (const resolved of merged.values()) {
+    const bucket = byCategory.get(resolved.category);
+    if (bucket) {
+      bucket.push(resolved);
+    } else {
+      byCategory.set(resolved.category, [resolved]);
     }
   }
 

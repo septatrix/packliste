@@ -23,15 +23,19 @@ const segeln: PresetDefinition = {
         quantity: 1,
         icon: '🧤',
       },
-      { id: 'segeln-sonnenbrille', name: 'Sonnenbrille mit Kordel', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🕶️' },
+      // Geteilte Item-IDs (shared-*): dasselbe Ausrüstungsstück wird auch
+      // von anderen Presets vorgeschlagen — eine Reise mit mehreren
+      // Aktivitäten braucht trotzdem nur eine Sonnenbrille, eine
+      // Trinkflasche usw.
+      { id: 'shared-sonnenbrille', name: 'Sonnenbrille mit Kordel', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🕶️' },
       { id: 'segeln-trockensack', name: 'Wasserdichte Tasche (Dry Bag)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🎒' },
       { id: 'segeln-handyhuelle', name: 'Wasserdichte Handyhülle', category: 'Elektronik', importance: 'optional', quantity: 1, icon: '📱' },
       { id: 'segeln-messer', name: 'Riggmesser / Seemesser', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🔪' },
-      { id: 'segeln-stirnlampe', name: 'Stirnlampe (mit Rotlicht-Modus)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🔦' },
+      { id: 'shared-taschenlampe', name: 'Stirnlampe (mit Rotlicht-Modus)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🔦' },
       { id: 'segeln-seekrankheit', name: 'Mittel gegen Seekrankheit', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '💊' },
       { id: 'segeln-badesachen', name: 'Badesachen', category: 'Kleidung', importance: 'optional', quantity: { min: 1, max: 2 }, icon: '🩱' },
       { id: 'segeln-handtuch', name: 'Schnelltrocknendes Handtuch', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '🛁' },
-      { id: 'segeln-trinkflasche', name: 'Trinkflasche', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '💧' },
+      { id: 'shared-trinkflasche', name: 'Trinkflasche', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '💧' },
       {
         id: 'segeln-shirts',
         name: 'Kurz-/Langarmshirts',
@@ -41,12 +45,13 @@ const segeln: PresetDefinition = {
         icon: '👕',
         note: perDayNote(1, params.days, 6),
       },
-      { id: 'segeln-bordpapiere', name: 'Bootsführerschein / Bordpapiere', category: 'Dokumente', importance: 'optional', quantity: 1, icon: '🪪' },
+      // Kein `quantity`: Bordpapiere/Führerschein besitzt man nur einmal.
+      { id: 'segeln-bordpapiere', name: 'Bootsführerschein / Bordpapiere', category: 'Dokumente', importance: 'optional', icon: '🪪' },
     ];
 
     if (params.climate.includes('warm')) {
       items.push(
-        { id: 'segeln-sonnencreme', name: 'Wasserfeste Sonnencreme', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '☀️' },
+        { id: 'shared-sonnencreme', name: 'Wasserfeste Sonnencreme', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '☀️' },
         { id: 'segeln-sonnenhut', name: 'Sonnenhut / Cap mit Kordel', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧢' },
       );
     }

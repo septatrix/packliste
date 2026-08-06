@@ -60,7 +60,13 @@ export const ItemSchema = z
     name: z.string().min(1),
     category: CategorySchema,
     importance: ImportanceSchema,
-    quantity: QuantitySchema,
+    /**
+     * Omit entirely for items where a count makes little sense because one
+     * only ever owns a single one at a time (an ID card, a driver's
+     * license, a wallet) — the UI then skips the amount input rather than
+     * showing a meaningless "×1" stepper.
+     */
+    quantity: QuantitySchema.optional(),
     /** Optional single emoji for quick visual identification; falls back to a per-category icon. */
     icon: z.string().min(1).optional(),
     /**

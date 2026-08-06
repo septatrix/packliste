@@ -12,9 +12,11 @@ const base: PresetDefinition = {
 
   resolveItems(params): Item[] {
     const items: Item[] = [
-      { id: 'base-ausweis', name: 'Personalausweis', category: 'Dokumente', importance: 'pflicht', quantity: 1, icon: '🪪' },
-      { id: 'base-geld', name: 'Geldbeutel mit Bargeld/Karten', category: 'Dokumente', importance: 'pflicht', quantity: 1, icon: '💳' },
-      { id: 'base-handy', name: 'Smartphone', category: 'Elektronik', importance: 'pflicht', quantity: 1, icon: '📱' },
+      // Keine `quantity` bei Dingen, von denen man ohnehin nur eines besitzt —
+      // ein Zähler ergibt hier keinen Sinn.
+      { id: 'base-ausweis', name: 'Personalausweis', category: 'Dokumente', importance: 'pflicht', icon: '🪪' },
+      { id: 'base-geld', name: 'Geldbeutel mit Bargeld/Karten', category: 'Dokumente', importance: 'pflicht', icon: '💳' },
+      { id: 'base-handy', name: 'Smartphone', category: 'Elektronik', importance: 'pflicht', icon: '📱' },
       { id: 'base-ladekabel', name: 'Ladekabel', category: 'Elektronik', importance: 'pflicht', quantity: 1, icon: '🔌' },
       { id: 'base-powerbank', name: 'Powerbank', category: 'Elektronik', importance: 'optional', quantity: 1, icon: '🔋' },
       { id: 'base-zahnbuerste', name: 'Zahnbürste', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '🪥' },
@@ -53,13 +55,12 @@ const base: PresetDefinition = {
     // Reiseziels nehmen wir nichts davon in die Liste auf (statt zu raten).
     if (params.destination !== undefined && params.destination !== 'inland') {
       items.push(
-        { id: 'base-reisepass', name: 'Reisepass', category: 'Dokumente', importance: 'pflicht', quantity: 1, icon: '🛂' },
+        { id: 'base-reisepass', name: 'Reisepass', category: 'Dokumente', importance: 'pflicht', icon: '🛂' },
         {
           id: 'base-versicherung',
           name: 'Nachweis Auslandskrankenversicherung',
           category: 'Dokumente',
           importance: 'optional',
-          quantity: 1,
           icon: '📋',
         },
       );
@@ -73,7 +74,6 @@ const base: PresetDefinition = {
           name: 'Visum / Einreisedokumente',
           category: 'Dokumente',
           importance: 'pflicht',
-          quantity: 1,
           icon: '🛃',
         },
         { id: 'base-adapter', name: 'Steckdosenadapter', category: 'Elektronik', importance: 'pflicht', quantity: 1, icon: '🔌' },
@@ -82,7 +82,6 @@ const base: PresetDefinition = {
           name: 'Bargeld in Landeswährung',
           category: 'Dokumente',
           importance: 'optional',
-          quantity: 1,
           icon: '💵',
         },
       );
@@ -99,9 +98,12 @@ const base: PresetDefinition = {
       });
     }
 
+    // Geteilte Item-ID: eine spezifischere Sonnencreme-Empfehlung aus einem
+    // Aktivitäts-Preset (z. B. Skifahren, Segeln) überschreibt diese
+    // generische, statt als zweiter Eintrag daneben zu stehen.
     if (params.climate.includes('warm') || params.climate.includes('frostig')) {
       items.push({
-        id: 'base-sonnencreme',
+        id: 'shared-sonnencreme',
         name: 'Sonnencreme',
         category: 'Hygiene',
         importance: 'pflicht',

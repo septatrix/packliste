@@ -8,10 +8,13 @@ const camping: PresetDefinition = {
 
   resolveItems(params): Item[] {
     const items: Item[] = [
-      { id: 'camping-zelt', name: 'Zelt', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '⛺' },
+      // Geteilte Item-IDs (shared-*): dasselbe Ausrüstungsstück wird auch
+      // von Wandern/Sommerlager vorgeschlagen — eine Reise mit mehreren
+      // dieser Aktivitäten braucht trotzdem nur ein Zelt, einen Schlafsack usw.
+      { id: 'shared-zelt', name: 'Zelt', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '⛺' },
       { id: 'camping-heringe', name: 'Ersatzheringe und -schnüre', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🪝' },
-      { id: 'camping-isomatte', name: 'Isomatte / Luftmatratze', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛏️' },
-      { id: 'camping-schlafsack', name: 'Schlafsack', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛌' },
+      { id: 'shared-isomatte', name: 'Isomatte', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛏️' },
+      { id: 'shared-schlafsack', name: 'Schlafsack', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🛌' },
       { id: 'camping-kopfkissen', name: 'Reisekissen', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🛏️' },
       {
         id: 'camping-stuhl',
@@ -24,7 +27,7 @@ const camping: PresetDefinition = {
       },
       { id: 'camping-tisch', name: 'Campingtisch', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🪑' },
       { id: 'camping-kuehlbox', name: 'Kühlbox mit Kühlakkus', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🧊' },
-      { id: 'camping-kocher', name: 'Gaskocher + Gaskartuschen', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🍳' },
+      { id: 'shared-kocher', name: 'Gaskocher + Gaskartuschen', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🍳' },
       {
         id: 'camping-geschirr',
         name: 'Campinggeschirr (Teller, Becher, Besteck)',
@@ -36,7 +39,8 @@ const camping: PresetDefinition = {
       { id: 'camping-spuelmittel', name: 'Spülmittel & Schwamm', category: 'Sonstiges', importance: 'optional', quantity: 1, icon: '🧽' },
       { id: 'camping-wasserkanister', name: 'Wasserkanister', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '💧' },
       { id: 'camping-laterne', name: 'Laterne / Campingleuchte', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🏮' },
-      { id: 'camping-stirnlampe', name: 'Stirnlampe', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🔦' },
+      { id: 'shared-taschenlampe', name: 'Stirnlampe', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🔦' },
+      { id: 'shared-erste-hilfe-set', name: 'Erste-Hilfe-Set', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🩹' },
       { id: 'camping-multitool', name: 'Multitool / Taschenmesser', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🔪' },
       { id: 'camping-feuerzeug', name: 'Feuerzeug / Streichhölzer', category: 'Sonstiges', importance: 'pflicht', quantity: 1, icon: '🔥' },
       {
@@ -63,7 +67,7 @@ const camping: PresetDefinition = {
 
     if (params.climate.includes('warm')) {
       items.push(
-        { id: 'camping-mueckenschutz', name: 'Mückenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
+        { id: 'shared-insektenschutz', name: 'Mückenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
         { id: 'camping-sonnensegel', name: 'Sonnensegel / Zeltvordach-Beschattung', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '⛱️' },
       );
     }

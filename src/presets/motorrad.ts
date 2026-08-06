@@ -24,12 +24,15 @@ const motorrad: PresetDefinition = {
         icon: '👂',
         note: 'Ein Paar pro paar Fahrtage als Reserve, 1–3',
       },
-      { id: 'motorrad-erste-hilfe', name: 'Erste-Hilfe-Set', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🩹' },
+      // Geteilte Item-ID: dasselbe Erste-Hilfe-Set wird auch von
+      // Wandern/Camping vorgeschlagen.
+      { id: 'shared-erste-hilfe-set', name: 'Erste-Hilfe-Set', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🩹' },
       { id: 'motorrad-bordwerkzeug', name: 'Bordwerkzeug / Pannenset', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🔧' },
       { id: 'motorrad-ersatzteile', name: 'Ersatzsicherungen & Glühbirnen', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '💡' },
       { id: 'motorrad-reifenpannenset', name: 'Reifen-Reparaturset / Kompressor', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🛞' },
       { id: 'motorrad-panzertape', name: 'Panzertape & Kabelbinder', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🧵' },
-      { id: 'motorrad-fahrzeugschein', name: 'Fahrzeugschein & Führerschein', category: 'Dokumente', importance: 'pflicht', quantity: 1, icon: '🪪' },
+      // Kein `quantity`: Fahrzeugschein/Führerschein besitzt man nur einmal.
+      { id: 'motorrad-fahrzeugschein', name: 'Fahrzeugschein & Führerschein', category: 'Dokumente', importance: 'pflicht', icon: '🪪' },
       {
         id: 'motorrad-shirts',
         name: 'T-Shirts (unter der Schutzkleidung)',
@@ -46,11 +49,12 @@ const motorrad: PresetDefinition = {
     if (params.destination !== undefined && params.destination !== 'inland') {
       items.push(
         {
+          // Kein `quantity`: Man führt eine gültige Versicherungskarte mit,
+          // kein Zähler nötig.
           id: 'motorrad-versicherungskarte',
           name: 'Grüne Versicherungskarte',
           category: 'Dokumente',
           importance: 'pflicht',
-          quantity: 1,
           icon: '📋',
         },
         {

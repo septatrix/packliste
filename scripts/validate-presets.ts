@@ -1,24 +1,33 @@
 /**
  * Catches preset authoring mistakes early: thrown exceptions, malformed
- * output (checked against ItemSchema), and item-id collisions between
- * presets — including between two *different* activity presets, now that a
- * trip can select several at once (see PackingApp.vue). Run via
- * `pnpm validate:presets`.
+ * output (checked against ItemSchema), accidental item-id collisions, and
+ * runtime errors while merging presets together. Run via `pnpm validate:presets`.
  *
- * Split into two passes for speed: which parameter *values* are active
- * doesn't change which item ids a preset can produce (ids are static
- * strings, not computed), so exhaustively crossing every preset *subset*
- * with the full parameter matrix is wasted work that would grow as
- * O(2^presets) forever. Instead:
+ * Two different presets returning an item with the *same* id is no longer
+ * automatically an error — it's the convention for "this is genuinely the
+ * same real-world thing" (see the `shared-` prefix and resolveList()'s
+ * merge logic in src/lib/engine.ts), used deliberately by e.g. a shared
+ * first-aid kit or sunscreen recommendation across multiple presets. So
+ * this script checks two different things instead of one flat duplicate
+ * check:
  *   1. Every individual preset (merged with base) against the full
- *      parameter matrix — catches exceptions/malformed output.
- *   2. Every non-empty subset of presets against a handful of parameter
- *      profiles chosen to each turn on a different, maximal set of
- *      conditional items — catches id collisions between presets without
- *      re-running the full matrix for every subset.
+ *      parameter matrix — catches exceptions/malformed output. Also
+ *      records every id each preset can ever produce.
+ *   2. A naming-convention check: any id *not* prefixed `shared-` must be
+ *      globally unique across presets — otherwise resolveList() would
+ *      silently (and likely wrongly) merge two unrelated items that just
+ *      happened to collide by accident.
+ *   3. resolveList() itself, across every non-empty subset of presets and
+ *      a handful of parameter profiles chosen to each turn on a maximal
+ *      set of conditional items — exercises the actual merge path
+ *      (quantity/importance combination) for runtime errors, without
+ *      re-running the full parameter matrix for every subset (which is
+ *      unnecessary: which ids exist doesn't depend on the specific
+ *      parameter values, only on which conditional branches are active).
  */
 import { z } from 'zod';
 import { ItemSchema, ParamsSchema, type Climate, type Params, type PresetDefinition } from '../src/lib/schema';
+import { resolveList } from '../src/lib/engine';
 import { base, activityPresets } from '../src/presets';
 
 function nonEmptySubsets<T>(items: T[]): T[][] {
@@ -36,24 +45,33 @@ function allSubsets<T>(items: T[]): T[][] {
 const itemArraySchema = z.array(ItemSchema);
 let errorCount = 0;
 
-function resolveChecked(preset: PresetDefinition, params: Params, contextLabel: string): z.infer<typeof itemArraySchema> | undefined {
+// Every id each preset can ever produce, across all sampled parameters —
+// used for the naming-convention check after Pass 1.
+const idsByPreset = new Map<string, Set<string>>();
+
+function recordAndValidate(preset: PresetDefinition, params: Params, contextLabel: string): void {
   let rawItems: unknown;
   try {
     rawItems = preset.resolveItems(params);
   } catch (err) {
     errorCount += 1;
     console.error(`Preset "${preset.id}" warf einen Fehler (${contextLabel}):`, err);
-    return undefined;
+    return;
   }
 
   const result = itemArraySchema.safeParse(rawItems);
   if (!result.success) {
     errorCount += 1;
     console.error(`Preset "${preset.id}" liefert ungültige Items (${contextLabel}):`, result.error.message);
-    return undefined;
+    return;
   }
 
-  return result.data;
+  let idSet = idsByPreset.get(preset.id);
+  if (!idSet) {
+    idSet = new Set();
+    idsByPreset.set(preset.id, idSet);
+  }
+  for (const item of result.data) idSet.add(item.id);
 }
 
 // --- Pass 1: full parameter matrix, one activity preset (+ base) at a time ---
@@ -82,8 +100,8 @@ for (const preset of activityPresets) {
             }
             const params = parsedParams.data;
             const contextLabel = `params=${JSON.stringify(params)}`;
-            resolveChecked(base, params, contextLabel);
-            resolveChecked(preset, params, contextLabel);
+            recordAndValidate(base, params, contextLabel);
+            recordAndValidate(preset, params, contextLabel);
           }
         }
       }
@@ -91,7 +109,30 @@ for (const preset of activityPresets) {
   }
 }
 
-// --- Pass 2: every preset subset, against a handful of maximal-inclusion profiles ---
+// --- Pass 2: naming-convention check ---
+// An id outside the `shared-` namespace appearing in more than one preset
+// is almost certainly an accidental collision, not an intentional shared
+// item — resolveList() would merge it anyway, likely combining two
+// unrelated things.
+
+const owners = new Map<string, string>();
+for (const [presetId, ids] of idsByPreset) {
+  for (const id of ids) {
+    if (id.startsWith('shared-')) continue;
+    const existingOwner = owners.get(id);
+    if (existingOwner && existingOwner !== presetId) {
+      errorCount += 1;
+      console.error(
+        `Item-ID "${id}" (kein "shared-"-Präfix) wird sowohl von "${existingOwner}" als auch von "${presetId}" verwendet — ` +
+          `entweder umbenennen oder absichtlich mit dem "shared-"-Präfix teilen.`,
+      );
+    } else {
+      owners.set(id, presetId);
+    }
+  }
+}
+
+// --- Pass 3: exercise resolveList()'s merge path across preset subsets ---
 
 const collisionProfiles: Params[] = [
   { presetIds: [], climate: ['warm', 'mild', 'kalt', 'frostig'], travel: 'flugzeug', destination: 'international', gender: undefined, days: 14 },
@@ -101,40 +142,29 @@ const collisionProfiles: Params[] = [
 ];
 
 const activityPresetCombos: PresetDefinition[][] = nonEmptySubsets(activityPresets);
-let collisionChecks = 0;
+let mergeChecks = 0;
 
 for (const presets of activityPresetCombos) {
   for (const profile of collisionProfiles) {
-    collisionChecks += 1;
+    mergeChecks += 1;
     const presetIds = presets.map((p) => p.id);
     const params: Params = { ...profile, presetIds };
-    const contextLabel = `presets=[${presetIds.join(', ')}], params=${JSON.stringify(params)}`;
-
-    const seenIds = new Map<string, string>();
-    for (const p of [base, ...presets]) {
-      const items = resolveChecked(p, params, contextLabel);
-      if (!items) continue;
-
-      for (const item of items) {
-        const existing = seenIds.get(item.id);
-        if (existing) {
-          errorCount += 1;
-          console.error(`Doppelte Item-ID "${item.id}" in "${existing}" und "${p.id}" (${contextLabel})`);
-        } else {
-          seenIds.set(item.id, p.id);
-        }
-      }
+    try {
+      resolveList(params, [base, ...presets]);
+    } catch (err) {
+      errorCount += 1;
+      console.error(`resolveList() warf einen Fehler für Presets [${presetIds.join(', ')}] (params=${JSON.stringify(params)}):`, err);
     }
   }
 }
 
-const totalChecks = matrixCombinations + collisionChecks;
+const totalChecks = matrixCombinations + mergeChecks;
 if (errorCount > 0) {
   console.error(`\n${errorCount} Fehler in ${totalChecks} Prüfungen gefunden.`);
   process.exit(1);
 } else {
   console.log(
     `${activityPresets.length} Presets validiert: ${matrixCombinations} Parameterkombinationen (je einzeln) ` +
-      `+ ${collisionChecks} Kollisionsprüfungen über ${activityPresetCombos.length} Preset-Teilmengen.`,
+      `+ Namenskonventions-Check + ${mergeChecks} Merge-Prüfungen über ${activityPresetCombos.length} Preset-Teilmengen.`,
   );
 }
