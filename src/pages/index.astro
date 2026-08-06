@@ -1,6 +1,35 @@
 ---
+import { codeToHtml } from 'shiki';
 import PackingApp from '../components/PackingApp.vue';
+import { activityPresets, base } from '../presets';
 import '../styles/global.css';
+
+// Raw source of every preset module, keyed by file path, for the
+// "inspect presets" modal. Using import.meta.glob (rather than listing
+// each preset file by hand) means a newly added preset's source shows up
+// automatically as soon as it's registered in presets/index.ts.
+const rawPresetSources = import.meta.glob('../presets/*.ts', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>;
+
+function sourceForPresetId(id: string): string {
+  const entry = Object.entries(rawPresetSources).find(([path]) => path.endsWith(`/${id}.ts`));
+  return entry?.[1] ?? '';
+}
+
+const allPresets = [base, ...activityPresets];
+const presetCode = await Promise.all(
+  allPresets.map(async (preset) => ({
+    id: preset.id,
+    name: preset.name,
+    html: await codeToHtml(sourceForPresetId(preset.id), {
+      lang: 'typescript',
+      themes: { light: 'github-light', dark: 'github-dark' },
+    }),
+  })),
+);
 ---
 
 <!doctype html>
@@ -16,6 +45,6 @@ import '../styles/global.css';
     />
   </head>
   <body>
-    <PackingApp client:only="vue" />
+    <PackingApp client:only="vue" presetCode={presetCode} />
   </body>
 </html>

@@ -13,6 +13,7 @@
   "dependencies": {
     "@astrojs/vue": "^7.0.1",
     "astro": "^7.1.6",
+    "shiki": "^4.4.2",
     "vue": "3.6.0-rc.2",
     "zod": "^3.24.0"
   },

@@ -71,15 +71,26 @@ export type Item = z.infer<typeof ItemSchema>;
  * Runtime trip parameters consumed by presets/the engine. `days` is always
  * a plain number here — presets never deal with dates, only a day count
  * (see `TripSelection` below for what the user actually picks in the UI).
+ *
+ * `climate`/`travel`/`destination`/`gender` are all optional — "keine
+ * Angabe" (no selection) is a valid choice, and it's up to each preset's
+ * `resolveItems` to decide what that means for its own conditionals. There
+ * is no single universal rule: e.g. an unset `gender` conventionally means
+ * "include every gender-specific variant" (a preset author writes
+ * `matchesGender(params.gender, 'weiblich')`, see `presets/helpers.ts`),
+ * while an unset `travel`/`destination`/`climate` conventionally means
+ * "include none of the conditional items for that dimension" — which is
+ * already what a plain `params.travel === 'flugzeug'` check does for
+ * `undefined`, with no extra handling needed.
  */
 export const ParamsSchema = z
   .object({
     presetId: z.string().min(1),
-    climate: ClimateSchema,
+    climate: ClimateSchema.optional(),
     days: z.number().int().positive().max(365),
-    travel: TravelSchema,
-    destination: DestinationSchema,
-    gender: ParamGenderSchema,
+    travel: TravelSchema.optional(),
+    destination: DestinationSchema.optional(),
+    gender: ParamGenderSchema.optional(),
   })
   .strict();
 export type Params = z.infer<typeof ParamsSchema>;
@@ -103,12 +114,12 @@ const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Erwartetes Format
 export const TripSelectionSchema = z
   .object({
     presetId: z.string().min(1),
-    climate: ClimateSchema,
+    climate: ClimateSchema.optional(),
     startDate: IsoDateSchema,
     endDate: IsoDateSchema,
-    travel: TravelSchema,
-    destination: DestinationSchema,
-    gender: ParamGenderSchema,
+    travel: TravelSchema.optional(),
+    destination: DestinationSchema.optional(),
+    gender: ParamGenderSchema.optional(),
   })
   .strict()
   .refine((selection) => selection.endDate >= selection.startDate, {

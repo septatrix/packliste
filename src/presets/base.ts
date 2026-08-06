@@ -1,5 +1,5 @@
 import type { Item, PresetDefinition } from '../lib/schema';
-import { perDay } from './helpers';
+import { matchesGender, perDay } from './helpers';
 
 /**
  * Universelle Essentials, die unabhängig vom gewählten Aktivitäts-Preset
@@ -46,8 +46,9 @@ const base: PresetDefinition = {
       },
     ];
 
-    // Reisepass & Co. nur außerhalb des Heimatlands nötig.
-    if (params.destination !== 'inland') {
+    // Reisepass & Co. nur außerhalb des Heimatlands nötig. Ohne Angabe des
+    // Reiseziels nehmen wir nichts davon in die Liste auf (statt zu raten).
+    if (params.destination !== undefined && params.destination !== 'inland') {
       items.push(
         { id: 'base-reisepass', name: 'Reisepass', category: 'Dokumente', importance: 'pflicht', quantity: 1, icon: '🛂' },
         {
@@ -106,7 +107,7 @@ const base: PresetDefinition = {
       });
     }
 
-    if (params.gender === 'weiblich') {
+    if (matchesGender(params.gender, 'weiblich')) {
       items.push({
         id: 'base-hygieneartikel',
         name: 'Hygieneartikel (Periodenprodukte)',

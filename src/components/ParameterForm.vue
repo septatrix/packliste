@@ -20,11 +20,21 @@ function field<K extends keyof TripSelection>(key: K) {
   });
 }
 
+// Same idea, but for the four optional dimensions: native <select> values
+// are always strings, so the empty "Keine Angabe" option is represented as
+// '' in the DOM and converted to/from `undefined` in the model here.
+function optionalField<K extends 'climate' | 'travel' | 'destination' | 'gender'>(key: K) {
+  return computed<string>({
+    get: () => props.modelValue[key] ?? '',
+    set: (value) => emit('update:modelValue', { ...props.modelValue, [key]: value === '' ? undefined : value }),
+  });
+}
+
 const presetId = field('presetId');
-const climate = field('climate');
-const travel = field('travel');
-const destination = field('destination');
-const gender = field('gender');
+const climate = optionalField('climate');
+const travel = optionalField('travel');
+const destination = optionalField('destination');
+const gender = optionalField('gender');
 
 const selectedDescription = computed(() => props.presetOptions.find((p) => p.id === presetId.value)?.description);
 
@@ -83,6 +93,7 @@ function setEndDate(value: string) {
     <div class="field">
       <label for="climate">Klima</label>
       <select id="climate" v-model="climate">
+        <option value="">Keine Angabe</option>
         <option value="warm">Warm</option>
         <option value="mild">Mild</option>
         <option value="kalt">Kalt</option>
@@ -93,6 +104,7 @@ function setEndDate(value: string) {
     <div class="field">
       <label for="travel">Verkehrsmittel</label>
       <select id="travel" v-model="travel">
+        <option value="">Keine Angabe</option>
         <option value="auto">Auto</option>
         <option value="bahn">Bahn</option>
         <option value="flugzeug">Flugzeug</option>
@@ -102,6 +114,7 @@ function setEndDate(value: string) {
     <div class="field">
       <label for="destination">Reiseziel</label>
       <select id="destination" v-model="destination">
+        <option value="">Keine Angabe</option>
         <option value="inland">Inland</option>
         <option value="eu_schengen">EU / Schengen</option>
         <option value="international">International</option>
@@ -111,6 +124,7 @@ function setEndDate(value: string) {
     <div class="field">
       <label for="gender">Geschlecht</label>
       <select id="gender" v-model="gender">
+        <option value="">Keine Angabe</option>
         <option value="divers">Divers</option>
         <option value="maennlich">Männlich</option>
         <option value="weiblich">Weiblich</option>

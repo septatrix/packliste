@@ -1,5 +1,5 @@
 import type { Item, PresetDefinition } from '../lib/schema';
-import { perDay } from './helpers';
+import { matchesGender, perDay } from './helpers';
 
 /**
  * Modeled on a real two-week "Kofferliste" for a Catholic youth-group
@@ -103,7 +103,10 @@ const sommerlager: PresetDefinition = {
     ];
 
     // Nachtzeug Jungen: Zeltlager mit Isomatte/Luftmatratze statt festem Bett.
-    if (params.gender === 'maennlich') {
+    // Ohne Geschlechtsangabe zeigen wir beide Varianten (Jungen + Mädchen),
+    // damit nichts Relevantes fehlt — bei "divers" hingegen bewusst keine
+    // der beiden zusätzlichen Varianten.
+    if (matchesGender(params.gender, 'maennlich')) {
       items.push(
         { id: 'lager-isomatte', name: 'Isomatte', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🏕️' },
         { id: 'lager-luftmatratze', name: 'Luftmatratze mit Pumpe', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🏕️' },
@@ -112,7 +115,7 @@ const sommerlager: PresetDefinition = {
     }
 
     // Nachtzeug Mädchen: feste Betten, daher Bettwäsche statt Isomatte.
-    if (params.gender === 'weiblich') {
+    if (matchesGender(params.gender, 'weiblich')) {
       items.push(
         { id: 'lager-bettwaesche', name: 'Bettwäsche (falls kein Schlafsack)', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🛏️' },
         { id: 'lager-hausschuhe', name: 'Hausschuhe', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🥿' },

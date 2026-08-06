@@ -8,10 +8,12 @@ import { z } from 'zod';
 import { ItemSchema, ParamsSchema, type Params } from '../src/lib/schema';
 import { base, activityPresets } from '../src/presets';
 
-const climates: Params['climate'][] = ['warm', 'mild', 'kalt', 'frostig'];
-const travels: Params['travel'][] = ['auto', 'bahn', 'flugzeug'];
-const destinations: Params['destination'][] = ['inland', 'eu_schengen', 'international'];
-const genders: Params['gender'][] = ['divers', 'maennlich', 'weiblich'];
+// `undefined` ("keine Angabe") is included in every dimension so the
+// validator also exercises each preset's unset-value handling.
+const climates: Params['climate'][] = ['warm', 'mild', 'kalt', 'frostig', undefined];
+const travels: Params['travel'][] = ['auto', 'bahn', 'flugzeug', undefined];
+const destinations: Params['destination'][] = ['inland', 'eu_schengen', 'international', undefined];
+const genders: Params['gender'][] = ['divers', 'maennlich', 'weiblich', undefined];
 const dayCounts = [1, 3, 7, 14];
 
 const itemArraySchema = z.array(ItemSchema);

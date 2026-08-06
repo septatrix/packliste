@@ -111,6 +111,13 @@ body {
   padding: 1.5rem 1rem 4rem;
 }
 
+.app-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .app-header h1 {
   margin: 0 0 0.25rem;
   font-size: 1.75rem;
@@ -123,6 +130,18 @@ body {
 
 .hint {
   color: var(--color-text-muted);
+}
+
+.inspect-button {
+  flex: none;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 /* --- Parameter form --- */
@@ -343,6 +362,103 @@ body {
   }
 }
 
+/* --- Preset inspector --- */
+
+.inspector-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.inspector-modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 50rem;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+}
+
+.inspector-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.inspector-tab {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.inspector-tab.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+
+.inspector-close {
+  flex: none;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.inspector-code {
+  overflow: auto;
+}
+
+.inspector-code pre.shiki {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* Shiki emits dual-theme HTML: the base color/background is the light
+   theme, with a --shiki-dark(-bg) variable holding the dark variant. Force
+   the dark variant under the same conditions the rest of the app uses —
+   OS dark scheme unless explicitly overridden to light, or an explicit
+   dark override regardless of OS. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .shiki,
+  :root:not([data-theme='light']) .shiki span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+  }
+}
+
+:root[data-theme='dark'] .shiki,
+:root[data-theme='dark'] .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+
 /* --- Print --- */
 
 @page {
@@ -440,7 +556,9 @@ body {
   }
 
   .state-button,
-  .hint {
+  .hint,
+  .inspect-button,
+  .inspector-overlay {
     display: none;
   }
 }

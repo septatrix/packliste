@@ -4,17 +4,19 @@ A client-side web app for creating interactive travel/vacation packing lists.
 Pick an activity preset (Skifahren, Wandern, Sommerlager, …) plus trip
 parameters — start/end date (the duration is computed automatically),
 climate, mode of travel, destination scope (inland / EU-Schengen /
-international), gender — and get a checklist with per-item quantities
-computed for your trip, shown with a small icon per item for quick scanning.
-Track each item as *offen*, *eingepackt*, *nicht benötigt*, or *für morgen*
-(things still needed that get collected on a separate "grab before leaving"
-list), and override the computed quantity per item if you want to pack a
-different amount than suggested. All state is written to `localStorage`;
-there is no backend — the whole app is a static site. The list itself
-renders as a print-like two-column layout (A4 width as the reference point)
-that collapses to one column on narrow screens, and has a dedicated print
-stylesheet (checkbox glyphs, no interactive chrome) for printing the list
-on paper.
+international), gender, each of which can also be left as "keine Angabe" —
+and get a checklist with per-item quantities computed for your trip, shown
+with a small icon per item for quick scanning. Track each item as *offen*,
+*eingepackt*, *nicht benötigt*, or *für morgen* (things still needed that
+get collected on a separate "grab before leaving" list), and override the
+computed quantity per item if you want to pack a different amount than
+suggested. All state is written to `localStorage`; there is no backend —
+the whole app is a static site. The list itself renders as a print-like
+two-column layout (A4 width as the reference point) that collapses to one
+column on narrow screens, and has a dedicated print stylesheet (checkbox
+glyphs, no interactive chrome) for printing the list on paper. A "Presets
+ansehen" button opens a modal with the actual (syntax-highlighted) source
+of every preset, for anyone curious what a preset really does.
 
 **Stack:** [Astro](https://astro.build) (static output) +
 [Vue 3.6](https://vuejs.org) + plain CSS. Components are written with
@@ -84,6 +86,33 @@ the `Params.days` a preset sees, computed inclusively of both endpoints
 still counts as 1 day). `Params` itself is unchanged either way — a preset
 author never needs to touch date logic.
 
+### "Keine Angabe" (no selection)
+
+`climate`, `travel`, `destination`, and `gender` are all optional on
+`Params` — the user can leave any of them unset instead of picking a value.
+There's no single rule for what "unset" means; it's a per-field, per-branch
+decision left to each preset's plain conditionals:
+
+- **climate / travel / destination default to exclusive.** A plain
+  `params.travel === 'flugzeug'` check is already `false` when `travel` is
+  `undefined`, so an unset value naturally means "include none of the
+  conditional items for this dimension" with no extra code. The one thing
+  to watch for is a *negated* check like `!== 'inland'`, which is `true` for
+  `undefined` and would wrongly include a destination-tier item — those
+  need an explicit `params.destination !== undefined && ...` guard (see
+  `base.ts`).
+- **gender defaults to inclusive.** An unset gender means "show every
+  gender-specific variant" (the user can decide/skip what doesn't apply),
+  which is the opposite default — so gender checks use the
+  `matchesGender(params.gender, target)` helper from `presets/helpers.ts`
+  (`gender === undefined || gender === target`) instead of a plain
+  equality check. `sommerlager.ts`'s "Nachtzeug Jungen"/"Nachtzeug Mädchen"
+  split is the clearest example: unset gender shows both variants,
+  `divers` shows neither, `maennlich`/`weiblich` show just their own.
+
+A new preset should apply the same judgment per field it conditions on —
+there's no framework-level switch to flip.
+
 There's always a `base` preset (`src/presets/base.ts`) merged in regardless
 of the chosen activity — universal essentials like documents, chargers, and
 destination-dependent items (passport/visa/adapter/currency for
@@ -104,9 +133,10 @@ pnpm validate:presets
 ```
 
 Runs every registered preset's `resolveItems()` across a full matrix of trip
-parameters (climate × travel × destination × gender × several day counts) and
-checks for thrown exceptions, schema violations, and duplicate item IDs
-between presets. Useful as a quick regression check after editing a preset.
+parameters (climate × travel × destination × gender × several day counts,
+each dimension including `undefined`/"keine Angabe") and checks for thrown
+exceptions, schema violations, and duplicate item IDs between presets.
+Useful as a quick regression check after editing a preset.
 
 ## Architecture
 
@@ -139,6 +169,30 @@ but the number itself is freely editable and stored per item in
 `ItemProgress.amount`, independent of the four-way state. This lets someone
 decide "the preset suggests 1–2, but I'm only bringing 1" without that
 being conflated with whether the item is packed yet.
+
+## Preset inspector
+
+The "📜 Presets ansehen" button (`PackingApp.vue`) opens `PresetInspector.vue`,
+a modal with one tab per registered preset (base + every activity preset)
+showing its actual `.ts` source, syntax-highlighted.
+
+The highlighting happens entirely at **build time**, not in the browser:
+`src/pages/index.astro`'s frontmatter uses `import.meta.glob('../presets/*.ts',
+{ eager: true, query: '?raw', import: 'default' })` to pull in every preset
+file's raw source (matched to a preset by filename, so a newly added preset
+shows up automatically — no third place to register it beyond `presets/index.ts`),
+runs each through [Shiki](https://shiki.style)'s `codeToHtml()` with a dual
+light/dark theme (`github-light`/`github-dark`), and passes the resulting
+HTML strings to `PackingApp` as a prop. This means zero Shiki runtime cost in
+the client bundle — the modal just renders pre-built HTML via `v-html`
+(trusted, since it's our own bundled source, not user input).
+
+Shiki's dual-theme output encodes the light theme as each token's plain
+`color`/`background-color`, with the dark variant available via
+`--shiki-dark`/`--shiki-dark-bg` CSS custom properties. `global.css` swaps to
+those variables under the same conditions used everywhere else in the app
+(OS `prefers-color-scheme: dark`, unless overridden to light; or an explicit
+`data-theme="dark"` override, regardless of OS).
 
 ## Printing
 
