@@ -72,21 +72,29 @@ export type Item = z.infer<typeof ItemSchema>;
  * a plain number here — presets never deal with dates, only a day count
  * (see `TripSelection` below for what the user actually picks in the UI).
  *
- * `climate`/`travel`/`destination`/`gender` are all optional — "keine
- * Angabe" (no selection) is a valid choice, and it's up to each preset's
- * `resolveItems` to decide what that means for its own conditionals. There
- * is no single universal rule: e.g. an unset `gender` conventionally means
- * "include every gender-specific variant" (a preset author writes
- * `matchesGender(params.gender, 'weiblich')`, see `presets/helpers.ts`),
- * while an unset `travel`/`destination`/`climate` conventionally means
- * "include none of the conditional items for that dimension" — which is
- * already what a plain `params.travel === 'flugzeug'` check does for
+ * `presetIds` and `climate` are arrays — a trip can combine several
+ * activities (e.g. Skifahren *and* Sommerlager on the same vacation) and
+ * several climates (e.g. a country with both hot days and cold nights), so
+ * the resulting list is the union of whatever each selected value implies.
+ * An empty array means "keine Angabe" for climate, handled the same way as
+ * `travel`/`destination` below (exclusive: `params.climate.includes(x)` is
+ * already `false` for an empty array, no special-casing needed).
+ *
+ * `travel`/`destination`/`gender` are single, optional values — "keine
+ * Angabe" (no selection) is a valid choice there too, and it's up to each
+ * preset's `resolveItems` to decide what that means for its own
+ * conditionals. There is no single universal rule: e.g. an unset `gender`
+ * conventionally means "include every gender-specific variant" (a preset
+ * author writes `matchesGender(params.gender, 'weiblich')`, see
+ * `presets/helpers.ts`), while an unset `travel`/`destination` conventionally
+ * means "include none of the conditional items for that dimension" — which
+ * is already what a plain `params.travel === 'flugzeug'` check does for
  * `undefined`, with no extra handling needed.
  */
 export const ParamsSchema = z
   .object({
-    presetId: z.string().min(1),
-    climate: ClimateSchema.optional(),
+    presetIds: z.array(z.string().min(1)),
+    climate: z.array(ClimateSchema),
     days: z.number().int().positive().max(365),
     travel: TravelSchema.optional(),
     destination: DestinationSchema.optional(),
@@ -113,8 +121,8 @@ const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Erwartetes Format
  */
 export const TripSelectionSchema = z
   .object({
-    presetId: z.string().min(1),
-    climate: ClimateSchema.optional(),
+    presetIds: z.array(z.string().min(1)),
+    climate: z.array(ClimateSchema),
     startDate: IsoDateSchema,
     endDate: IsoDateSchema,
     travel: TravelSchema.optional(),
@@ -129,8 +137,8 @@ export const TripSelectionSchema = z
 export type TripSelection = z.infer<typeof TripSelectionSchema>;
 
 export const DEFAULT_TRIP_SELECTION: TripSelection = {
-  presetId: '',
-  climate: 'mild',
+  presetIds: [],
+  climate: ['mild'],
   startDate: todayIso(),
   endDate: addDays(todayIso(), 6),
   travel: 'auto',

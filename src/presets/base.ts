@@ -96,7 +96,7 @@ const base: PresetDefinition = {
       });
     }
 
-    if (params.climate === 'warm' || params.climate === 'frostig') {
+    if (params.climate.includes('warm') || params.climate.includes('frostig')) {
       items.push({
         id: 'base-sonnencreme',
         name: 'Sonnencreme',

@@ -184,6 +184,58 @@ body {
   color: var(--color-text-muted);
 }
 
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.toggle-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-chip.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+
+.toggle-chip:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.toggle-chip-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* --- Packing list --- */
 
 .progress {
@@ -539,6 +591,24 @@ body {
   }
 
   .parameter-form input[type='date']::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+
+  /* Toggle chips print as a plain text summary of what was actually
+     selected — unchecked options are dropped instead of shown unchecked. */
+  .toggle-chip {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin-right: 0.6rem;
+    font-weight: 600;
+  }
+
+  .toggle-chip:not(.active) {
+    display: none;
+  }
+
+  .toggle-chip-input {
     display: none;
   }
 

@@ -123,7 +123,7 @@ const sommerlager: PresetDefinition = {
     }
 
     // Extra warme Schicht bei kaltem/frostigem Wetter, zusätzlich zum Standard-Pullover.
-    if (params.climate === 'kalt' || params.climate === 'frostig') {
+    if (params.climate.includes('kalt') || params.climate.includes('frostig')) {
       items.push({
         id: 'lager-extra-pulli',
         name: 'Zusätzlicher warmer Pullover',

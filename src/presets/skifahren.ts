@@ -76,7 +76,7 @@ const skifahren: PresetDefinition = {
       });
     }
 
-    if (params.climate === 'frostig') {
+    if (params.climate.includes('frostig')) {
       items.push({
         id: 'ski-handwaermer',
         name: 'Handwärmer (Einweg)',

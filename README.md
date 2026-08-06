@@ -1,11 +1,15 @@
 # Packliste
 
 A client-side web app for creating interactive travel/vacation packing lists.
-Pick an activity preset (Skifahren, Wandern, Sommerlager, …) plus trip
-parameters — start/end date (the duration is computed automatically),
-climate, mode of travel, destination scope (inland / EU-Schengen /
-international), gender, each of which can also be left as "keine Angabe" —
-and get a checklist with per-item quantities computed for your trip, shown
+Pick one or more activity presets (Skifahren, Wandern, Sommerlager, …) —
+a trip can combine several, e.g. skiing *and* a swimming pool visit on the
+same vacation — plus trip parameters: start/end date (the duration is
+computed automatically), one or more climates (e.g. a destination with both
+hot days and cold nights), mode of travel, destination scope (inland /
+EU-Schengen / international), gender. Travel/destination/gender can be left
+as "keine Angabe"; activities and climate can have none, one, or several
+selected at once. Get a checklist with per-item quantities computed for
+your trip, shown
 with a small icon per item for quick scanning. Track each item as *offen*,
 *eingepackt*, *nicht benötigt*, or *für morgen* (things still needed that
 get collected on a separate "grab before leaving" list), and override the
@@ -48,13 +52,13 @@ interface PresetDefinition {
 ```
 
 `resolveItems` receives the chosen trip parameters (`climate`, `days`,
-`travel`, `destination`, `gender`, …) and returns the list of items with
-their category, importance (`pflicht` | `optional`), quantity (a fixed
-number, or a `{ min, max }` range), and an optional `icon` (a single emoji;
-falls back to a per-category default if omitted — see `CATEGORY_ICONS` in
-`src/lib/engine.ts`). Because it's just a function, a preset author has the
-full language available — loops, conditionals, arithmetic — instead of a
-fixed rule vocabulary:
+`travel`, `destination`, `gender`, `presetIds`, …) and returns the list of
+items with their category, importance (`pflicht` | `optional`), quantity (a
+fixed number, or a `{ min, max }` range), and an optional `icon` (a single
+emoji; falls back to a per-category default if omitted — see
+`CATEGORY_ICONS` in `src/lib/engine.ts`). Because it's just a function, a
+preset author has the full language available — loops, conditionals,
+arithmetic — instead of a fixed rule vocabulary:
 
 ```ts
 resolveItems(params) {
@@ -65,7 +69,7 @@ resolveItems(params) {
       quantity: { min: 1, max: 2 } },           // range quantity
   ];
 
-  if (params.climate === 'frostig') {
+  if (params.climate.includes('frostig')) {
     items.push({ id: 'ski-handwaermer', name: 'Handwärmer', category: 'Ausrüstung',
       importance: 'optional', quantity: perDay(1, params.days, 10) }); // capped
   }
@@ -86,14 +90,41 @@ the `Params.days` a preset sees, computed inclusively of both endpoints
 still counts as 1 day). `Params` itself is unchanged either way — a preset
 author never needs to touch date logic.
 
+### Multi-select activities and climate
+
+`presetIds` and `climate` are both arrays on `Params`/`TripSelection`, not
+single values — a trip can combine several activities (skiing *and* a
+swimming-pool visit on the same vacation) and several climates (hot days,
+cold nights), and the resulting list is simply the union of whatever each
+selected value implies. `PackingApp.vue` resolves this by merging `base`
+with *every* matched preset in one `resolveList()` call — `engine.ts` itself
+was already written to merge an arbitrary list of presets, so no engine
+changes were needed, only threading an array through the UI/schema layer.
+`ParameterForm.vue` renders both as a row of toggle chips (checkboxes styled
+as pills) rather than a `<select>`, since more than one can be active.
+
+An empty `climate`/`presetIds` array is "keine Angabe" — no toggle chip
+active. For `presetIds` that just means no packing list renders yet (the
+user needs to pick at least one activity). For `climate`, a plain
+`params.climate.includes('warm')` check is already `false` for an empty
+array, so "no climate selected" naturally means "include none of the
+climate-conditional items", the same way it did before climate became an
+array.
+
+Because activities can now be combined freely, `validate-presets.ts` tests
+every non-empty *subset* of registered activity presets (not just each one
+individually) merged with `base`, to catch item-id collisions between two
+different activity presets that would only surface when both are selected
+together.
+
 ### "Keine Angabe" (no selection)
 
-`climate`, `travel`, `destination`, and `gender` are all optional on
-`Params` — the user can leave any of them unset instead of picking a value.
-There's no single rule for what "unset" means; it's a per-field, per-branch
-decision left to each preset's plain conditionals:
+`travel`, `destination`, and `gender` are optional on `Params` — the user
+can leave any of them unset instead of picking a value. There's no single
+rule for what "unset" means; it's a per-field, per-branch decision left to
+each preset's plain conditionals:
 
-- **climate / travel / destination default to exclusive.** A plain
+- **travel / destination default to exclusive.** A plain
   `params.travel === 'flugzeug'` check is already `false` when `travel` is
   `undefined`, so an unset value naturally means "include none of the
   conditional items for this dimension" with no extra code. The one thing
@@ -132,11 +163,13 @@ with a clear error instead of silently corrupting the list.
 pnpm validate:presets
 ```
 
-Runs every registered preset's `resolveItems()` across a full matrix of trip
-parameters (climate × travel × destination × gender × several day counts,
-each dimension including `undefined`/"keine Angabe") and checks for thrown
-exceptions, schema violations, and duplicate item IDs between presets.
-Useful as a quick regression check after editing a preset.
+Runs every non-empty subset of activity presets (merged with `base`) across
+a full matrix of trip parameters — every climate subset (the powerset of
+all 4 values, including "none") × travel × destination × gender × several
+day counts, the latter three including `undefined`/"keine Angabe" — and
+checks for thrown exceptions, schema violations, and duplicate item IDs
+between any of the presets involved. ~28,600 combinations, runs in a few
+seconds. Useful as a quick regression check after editing a preset.
 
 ## Architecture
 
@@ -145,7 +178,9 @@ Useful as a quick regression check after editing a preset.
   persisted as-is), `Params`/`deriveParams()` (what presets consume, with
   `days` computed from the dates), `Item`, `Quantity`, category/importance
   /climate/etc. enums, `ItemState` for the four-way checklist state,
-  `ItemProgress` for a per-item `{ state, amount }` pair.
+  `ItemProgress` for a per-item `{ state, amount }` pair. `presetIds` and
+  `climate` are arrays (multi-select); `travel`/`destination`/`gender` are
+  single optional values.
 - `src/lib/dates.ts` — small ISO-date (`yyyy-mm-dd`) helpers: `todayIso`,
   `addDays`, `daysBetweenInclusive`, all parsed at UTC midnight so calendar
   math isn't affected by the browser's local timezone.
@@ -157,9 +192,10 @@ Useful as a quick regression check after editing a preset.
   (dates included) and per-item progress (`{ state, amount }`).
 - `src/presets/` — the preset modules described above.
 - `src/components/` — `PackingApp.vue` (root island) → `ParameterForm.vue`
-  (trip parameters, including the start/end date pickers) + `PackingList.vue`
-  → `ItemRow.vue` (per-item icon, editable amount, and four-way state
-  control) + `TomorrowList.vue` ("für morgen" aggregation).
+  (trip parameters, including the start/end date pickers and the
+  activity/climate toggle-chip groups) + `PackingList.vue` → `ItemRow.vue`
+  (per-item icon, editable amount, and four-way state control) +
+  `TomorrowList.vue` ("für morgen" aggregation).
 
 ### Packed-amount override
 

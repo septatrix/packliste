@@ -4,7 +4,7 @@ import ParameterForm from './ParameterForm.vue';
 import PackingList from './PackingList.vue';
 import TomorrowList from './TomorrowList.vue';
 import PresetInspector, { type PresetCodeEntry } from './PresetInspector.vue';
-import { DEFAULT_TRIP_SELECTION, deriveParams, type ItemState, type TripSelection } from '../lib/schema';
+import { DEFAULT_TRIP_SELECTION, deriveParams, type ItemState, type PresetDefinition, type TripSelection } from '../lib/schema';
 import { activityPresets, base, findActivityPreset } from '../presets';
 import { resolveList, type ResolvedItem } from '../lib/engine';
 import { loadItemProgress, loadTripSelection, saveItemProgress, saveTripSelection } from '../lib/storage';
@@ -18,7 +18,10 @@ const presetOptions = activityPresets.map((preset) => ({
 }));
 
 const tripSelection = reactive<TripSelection>(
-  loadTripSelection() ?? { ...DEFAULT_TRIP_SELECTION, presetId: activityPresets[0]?.id ?? '' },
+  loadTripSelection() ?? {
+    ...DEFAULT_TRIP_SELECTION,
+    presetIds: activityPresets[0] ? [activityPresets[0].id] : [],
+  },
 );
 const itemProgress = reactive(loadItemProgress());
 const inspectorOpen = ref(false);
@@ -26,11 +29,17 @@ const inspectorOpen = ref(false);
 watch(tripSelection, (value) => saveTripSelection({ ...value }), { deep: true });
 watch(itemProgress, (value) => saveItemProgress({ ...value }), { deep: true });
 
-const selectedPreset = computed(() => findActivityPreset(tripSelection.presetId));
+// A trip can combine several activities (e.g. Skifahren *and* Sommerlager),
+// so this is every matched preset, not just one.
+const selectedPresets = computed<PresetDefinition[]>(() =>
+  tripSelection.presetIds
+    .map((id) => findActivityPreset(id))
+    .filter((preset): preset is PresetDefinition => preset !== undefined),
+);
 
 const categories = computed(() => {
-  const preset = selectedPreset.value;
-  return preset ? resolveList(deriveParams(tripSelection), [base, preset]) : [];
+  if (selectedPresets.value.length === 0) return [];
+  return resolveList(deriveParams(tripSelection), [base, ...selectedPresets.value]);
 });
 
 const allItems = computed<ResolvedItem[]>(() => categories.value.flatMap((c) => c.items));
@@ -66,7 +75,7 @@ function onAmountChange(itemId: string, amount: number) {
 
     <ParameterForm :model-value="tripSelection" :preset-options="presetOptions" @update:model-value="onSelectionUpdate" />
 
-    <template v-if="selectedPreset">
+    <template v-if="selectedPresets.length > 0">
       <PackingList
         :categories="categories"
         :item-progress="itemProgress"
@@ -75,12 +84,12 @@ function onAmountChange(itemId: string, amount: number) {
       />
       <TomorrowList :items="allItems" :item-progress="itemProgress" />
     </template>
-    <p v-else class="hint">Bitte wähle oben eine Aktivität aus, um deine Packliste zu erstellen.</p>
+    <p v-else class="hint">Bitte wähle oben mindestens eine Aktivität aus, um deine Packliste zu erstellen.</p>
 
     <PresetInspector
       :open="inspectorOpen"
       :presets="props.presetCode"
-      :initial-id="tripSelection.presetId"
+      :initial-id="tripSelection.presetIds[0]"
       @close="inspectorOpen = false"
     />
   </div>

@@ -48,14 +48,14 @@ const wandern: PresetDefinition = {
       { id: 'wandern-wanderstoecke', name: 'Wanderstöcke', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🦯' },
     ];
 
-    if (params.climate === 'warm') {
+    if (params.climate.includes('warm')) {
       items.push(
         { id: 'wandern-sonnenhut', name: 'Sonnenhut / Cap', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧢' },
         { id: 'wandern-insektenschutz', name: 'Insektenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
       );
     }
 
-    if (params.climate === 'kalt' || params.climate === 'frostig') {
+    if (params.climate.includes('kalt') || params.climate.includes('frostig')) {
       items.push(
         { id: 'wandern-regenjacke', name: 'Wind- und Regenjacke', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧥' },
         { id: 'wandern-handschuhe', name: 'Handschuhe', category: 'Kleidung', importance: 'optional', quantity: 1, icon: '🧤' },
