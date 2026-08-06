@@ -1,5 +1,5 @@
 import type { Item, PresetDefinition } from '../lib/schema';
-import { perDay } from './helpers';
+import { perDay, perDayNote, rangeNote } from './helpers';
 
 const skifahren: PresetDefinition = {
   id: 'skifahren',
@@ -17,6 +17,7 @@ const skifahren: PresetDefinition = {
         importance: 'pflicht',
         quantity: { min: 1, max: 2 },
         icon: '🧤',
+        note: rangeNote(1, 2),
       },
       {
         id: 'ski-muetze',
@@ -25,6 +26,7 @@ const skifahren: PresetDefinition = {
         importance: 'pflicht',
         quantity: { min: 1, max: 2 },
         icon: '🧢',
+        note: rangeNote(1, 2),
       },
       { id: 'ski-schal', name: 'Schal / Buff', category: 'Kleidung', importance: 'optional', quantity: 1, icon: '🧣' },
       {
@@ -51,6 +53,7 @@ const skifahren: PresetDefinition = {
         importance: 'pflicht',
         quantity: { min: 1, max: 2 },
         icon: '🩲',
+        note: rangeNote(1, 2),
       },
       {
         id: 'ski-skisocken',
@@ -59,6 +62,7 @@ const skifahren: PresetDefinition = {
         importance: 'pflicht',
         quantity: perDay(1, params.days),
         icon: '🧦',
+        note: perDayNote(1, params.days),
       },
       { id: 'ski-ski-ausruestung', name: 'Ski/Snowboard + Stöcke', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🎿' },
       { id: 'ski-helm', name: 'Skihelm', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🪖' },
@@ -84,6 +88,7 @@ const skifahren: PresetDefinition = {
         importance: 'optional',
         quantity: perDay(1, params.days, 10),
         icon: '🔥',
+        note: perDayNote(1, params.days, 10),
       });
     }
 

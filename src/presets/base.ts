@@ -1,5 +1,5 @@
 import type { Item, PresetDefinition } from '../lib/schema';
-import { matchesGender, perDay } from './helpers';
+import { matchesGender, perDay, perDayNote, rangeNote } from './helpers';
 
 /**
  * Universelle Essentials, die unabhängig vom gewählten Aktivitäts-Preset
@@ -27,6 +27,7 @@ const base: PresetDefinition = {
         importance: 'pflicht',
         quantity: perDay(1, params.days),
         icon: '🩲',
+        note: perDayNote(1, params.days),
       },
       {
         id: 'base-socken',
@@ -35,6 +36,7 @@ const base: PresetDefinition = {
         importance: 'pflicht',
         quantity: perDay(1, params.days),
         icon: '🧦',
+        note: perDayNote(1, params.days),
       },
       {
         id: 'base-schlafanzug',
@@ -43,6 +45,7 @@ const base: PresetDefinition = {
         importance: 'optional',
         quantity: { min: 1, max: 2 },
         icon: '🌙',
+        note: rangeNote(1, 2),
       },
     ];
 
@@ -115,6 +118,7 @@ const base: PresetDefinition = {
         importance: 'optional',
         quantity: perDay(1, params.days, 20),
         icon: '🧴',
+        note: perDayNote(1, params.days, 20),
       });
     }
 

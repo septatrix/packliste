@@ -8,19 +8,23 @@ computed automatically), one or more climates (e.g. a destination with both
 hot days and cold nights), mode of travel, destination scope (inland /
 EU-Schengen / international), gender. Travel/destination/gender can be left
 as "keine Angabe"; activities and climate can have none, one, or several
-selected at once. Get a checklist with per-item quantities computed for
-your trip, shown
-with a small icon per item for quick scanning. Track each item as *offen*,
-*eingepackt*, *nicht benötigt*, or *für morgen* (things still needed that
-get collected on a separate "grab before leaving" list), and override the
-computed quantity per item if you want to pack a different amount than
-suggested. All state is written to `localStorage`; there is no backend —
-the whole app is a static site. The list itself renders as a print-like
-two-column layout (A4 width as the reference point) that collapses to one
-column on narrow screens, and has a dedicated print stylesheet (checkbox
-glyphs, no interactive chrome) for printing the list on paper. A "Presets
-ansehen" button opens a modal with the actual (syntax-highlighted) source
-of every preset, for anyone curious what a preset really does.
+selected at once — with zero activities picked, the universal base
+essentials still show, since those don't depend on an activity. Get a
+checklist with per-item quantities computed for your trip, shown with a
+small icon per item for quick scanning and an ⓘ info icon revealing which
+preset an item came from and how its quantity was computed. Track each
+item as *offen*, *eingepackt*, *nicht benötigt*, or *für morgen* (things
+still needed that get collected on a separate "grab before leaving" list),
+and override the computed quantity per item if you want to pack a
+different amount than suggested. All state is written to `localStorage`;
+there is no backend — the whole app is a static site. The list renders as
+a plain table (flush rows, alternating background, no per-item "card"
+look) in a print-like two-column layout (A4 width as the reference point)
+that collapses to one column on narrow screens, with a dedicated print
+stylesheet — checkbox glyphs, the alternating row colors preserved, no
+interactive chrome — for printing the list on paper. A "Presets ansehen"
+button opens a modal with the actual (syntax-highlighted) source of every
+preset, for anyone curious what a preset really does.
 
 **Stack:** [Astro](https://astro.build) (static output) +
 [Vue 3.6](https://vuejs.org) + plain CSS. Components are written with
@@ -104,12 +108,15 @@ changes were needed, only threading an array through the UI/schema layer.
 as pills) rather than a `<select>`, since more than one can be active.
 
 An empty `climate`/`presetIds` array is "keine Angabe" — no toggle chip
-active. For `presetIds` that just means no packing list renders yet (the
-user needs to pick at least one activity). For `climate`, a plain
-`params.climate.includes('warm')` check is already `false` for an empty
-array, so "no climate selected" naturally means "include none of the
-climate-conditional items", the same way it did before climate became an
-array.
+active. For `climate`, a plain `params.climate.includes('warm')` check is
+already `false` for an empty array, so "no climate selected" naturally
+means "include none of the climate-conditional items", the same way it did
+before climate became an array. For `presetIds`, an empty array just means
+no *activity-specific* items are added — `PackingApp.vue` always merges
+`base` regardless (`resolveList(deriveParams(tripSelection), [base,
+...selectedPresets])`, unconditionally), so the universal essentials are
+never gated behind picking an activity; a non-blocking hint above the list
+suggests picking one for more.
 
 Because activities can now be combined freely, `validate-presets.ts` tests
 every non-empty *subset* of registered activity presets (not just each one
@@ -186,8 +193,9 @@ seconds. Useful as a quick regression check after editing a preset.
   math isn't affected by the browser's local timezone.
 - `src/lib/engine.ts` — `resolveList(params, presets)` runs each preset's
   `resolveItems`, validates the output, resolves each item's icon (its own
-  or the category fallback), and groups items by category in a fixed
-  display order.
+  or the category fallback), records which preset produced it
+  (`sourceId`/`sourceName`, for the info icon) and groups items by category
+  in a fixed display order.
 - `src/lib/storage.ts` — `localStorage` persistence for the trip selection
   (dates included) and per-item progress (`{ state, amount }`).
 - `src/presets/` — the preset modules described above.
@@ -205,6 +213,20 @@ but the number itself is freely editable and stored per item in
 `ItemProgress.amount`, independent of the four-way state. This lets someone
 decide "the preset suggests 1–2, but I'm only bringing 1" without that
 being conflated with whether the item is packed yet.
+
+### Item provenance (the ⓘ info icon)
+
+Every item has a small ⓘ icon (`ItemRow.vue`) whose tooltip shows which
+preset produced it (`item.sourceName`, tracked per-item in `resolveList()`)
+and, when present, `item.note` — a short human-readable explanation of how
+the quantity was computed. `Item.note` is optional and author-supplied, not
+reconstructed after the fact (guessing from the resolved number would risk
+showing a wrong explanation): presets add it alongside a `perDay`/range
+call, e.g. `perDayNote(1, params.days, 8)` → `"1 pro Tag × 7 Tage, gedeckelt
+bei 8"`, or `rangeNote(1, 2)` → `"Frei wählbar zwischen 1 und 2"` (both in
+`presets/helpers.ts`). Items with a plain fixed quantity and no interesting
+calculation just show their source preset, which is still useful ("why is
+this in my list?").
 
 ## Preset inspector
 
@@ -230,6 +252,18 @@ those variables under the same conditions used everywhere else in the app
 (OS `prefers-color-scheme: dark`, unless overridden to light; or an explicit
 `data-theme="dark"` override, regardless of OS).
 
+## Table layout, not cards
+
+Each category renders as a plain table rather than a stack of individually
+bordered/rounded "cards": a header row, then flush item rows separated by a
+thin bottom border, with alternating row backgrounds (`:nth-of-type(even)`
+on `.item-row`, using a dedicated `--color-zebra-bg` variable rather than
+reusing the page background, so it stays visually distinct in both themes
+and survives the print color overrides below). The four-way state, which
+used to fill the whole row with a tinted background, is now a 3px left-edge
+accent stripe instead — keeping the state glanceable without breaking the
+table look.
+
 ## Printing
 
 `src/styles/global.css` has a `@media print` block (plus `@page { size: A4;
@@ -238,14 +272,21 @@ than a screenshot of the UI:
 
 - Forces a plain black-on-white palette regardless of the viewer's theme or
   OS dark-mode preference (printing a dark background wastes toner, and it
-  isn't guaranteed to render as intended anyway).
+  isn't guaranteed to render as intended anyway) — **except** the zebra
+  stripe, which is deliberately forced to a visible light gray instead of
+  white, since alternating rows are the whole point of a printed table.
+  `print-color-adjust: exact` on `.item-row` ensures the stripe actually
+  prints instead of being suppressed by the browser's default
+  no-backgrounds print economy mode.
 - Hides the four-way state buttons (meaningless on paper) and replaces each
   item row with a `☐` checkbox glyph via `::before`, so the printout is a
   real pen-and-paper checklist.
+- Hides the ⓘ info icon — it's a hover affordance with nothing to hover on
+  paper.
 - Item names switch from single-line ellipsis truncation to wrapping, since
   there's no hover tooltip on paper to reveal a cut-off name.
 - The parameter form prints as a plain bold-text summary of the chosen trip
-  (activity, dates, climate, …) instead of interactive form controls.
+  (activities, dates, climates, …) instead of interactive form controls.
 - The two-column layout is kept for print (`break-inside: avoid` on
   categories/rows so nothing splits awkwardly across the column or a page
   break).

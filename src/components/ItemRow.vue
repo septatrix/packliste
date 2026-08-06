@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { ResolvedItem } from '../lib/engine';
 import type { ItemProgress, ItemState } from '../lib/schema';
 
@@ -11,6 +12,14 @@ const STATES: { value: ItemState; icon: string; label: string }[] = [
   { value: 'nicht_benoetigt', icon: '✕', label: 'Nicht benötigt' },
   { value: 'morgen', icon: '⏰', label: 'Für morgen' },
 ];
+
+// Shown in the info icon's tooltip: which preset this item came from, and
+// (when available) how its suggested quantity was computed.
+const infoText = computed(() => {
+  const lines = [`Aus Preset: ${props.item.sourceName}`, `Empfehlung: ${props.item.quantityLabel}`];
+  if (props.item.note) lines.push(props.item.note);
+  return lines.join('\n');
+});
 
 function onAmountInput(event: Event) {
   const value = Number((event.target as HTMLInputElement).value);
@@ -28,6 +37,7 @@ function onAmountInput(event: Event) {
         :title="item.importance === 'pflicht' ? 'Pflicht' : 'Optional'"
       ></span>
       <span class="item-name" :title="item.name">{{ item.name }}</span>
+      <span class="item-info-icon" tabindex="0" role="note" :aria-label="infoText" :title="infoText">ⓘ</span>
     </div>
     <div class="item-controls">
       <input

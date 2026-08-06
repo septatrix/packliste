@@ -63,6 +63,13 @@ export const ItemSchema = z
     quantity: QuantitySchema,
     /** Optional single emoji for quick visual identification; falls back to a per-category icon. */
     icon: z.string().min(1).optional(),
+    /**
+     * Optional human-readable explanation of how `quantity` was computed
+     * (e.g. "1 pro Tag × 7 Tage" or "gedeckelt bei 8") — shown in the info
+     * icon's tooltip alongside the item's source preset. See `perDayNote`
+     * in `presets/helpers.ts`.
+     */
+    note: z.string().min(1).optional(),
   })
   .strict();
 export type Item = z.infer<typeof ItemSchema>;

@@ -1,5 +1,5 @@
 import type { Item, PresetDefinition } from '../lib/schema';
-import { matchesGender, perDay } from './helpers';
+import { matchesGender, perDay, perDayNote, rangeNote } from './helpers';
 
 /**
  * Modeled on a real two-week "Kofferliste" for a Catholic youth-group
@@ -18,10 +18,10 @@ const sommerlager: PresetDefinition = {
   resolveItems(params): Item[] {
     const items: Item[] = [
       // Kleidung
-      { id: 'lager-lange-hosen', name: 'Lange Hosen', category: 'Kleidung', importance: 'pflicht', quantity: { min: 1, max: 2 }, icon: '👖' },
-      { id: 'lager-kurze-hosen', name: 'Kurze Hosen', category: 'Kleidung', importance: 'pflicht', quantity: { min: 2, max: 4 }, icon: '🩳' },
+      { id: 'lager-lange-hosen', name: 'Lange Hosen', category: 'Kleidung', importance: 'pflicht', quantity: { min: 1, max: 2 }, icon: '👖', note: rangeNote(1, 2) },
+      { id: 'lager-kurze-hosen', name: 'Kurze Hosen', category: 'Kleidung', importance: 'pflicht', quantity: { min: 2, max: 4 }, icon: '🩳', note: rangeNote(2, 4) },
       { id: 'lager-jacke', name: 'Jacke', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧥' },
-      { id: 'lager-pullover', name: 'Pullover', category: 'Kleidung', importance: 'pflicht', quantity: { min: 1, max: 2 }, icon: '🧥' },
+      { id: 'lager-pullover', name: 'Pullover', category: 'Kleidung', importance: 'pflicht', quantity: { min: 1, max: 2 }, icon: '🧥', note: rangeNote(1, 2) },
       {
         id: 'lager-tshirts',
         name: 'T-Shirts',
@@ -29,9 +29,18 @@ const sommerlager: PresetDefinition = {
         importance: 'pflicht',
         quantity: perDay(1, params.days, 8),
         icon: '👕',
+        note: perDayNote(1, params.days, 8),
       },
       { id: 'lager-sportzeug', name: 'Sportzeug (für Programm/Sport)', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🎽' },
-      { id: 'lager-badesachen', name: 'Badesachen (doppelt)', category: 'Kleidung', importance: 'pflicht', quantity: 2, icon: '🩱' },
+      {
+        id: 'lager-badesachen',
+        name: 'Badesachen (doppelt)',
+        category: 'Kleidung',
+        importance: 'pflicht',
+        quantity: 2,
+        icon: '🩱',
+        note: 'Laut Vorlage doppelt (2), unabhängig von der Reisedauer',
+      },
       { id: 'lager-wanderschuhe', name: 'Feste, bequeme Schuhe (zum Wandern)', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🥾' },
       { id: 'lager-leichte-schuhe', name: 'Leichte Schuhe', category: 'Kleidung', importance: 'optional', quantity: 1, icon: '👟' },
       { id: 'lager-turnschuhe', name: 'Turnschuhe', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '👟' },
@@ -65,7 +74,15 @@ const sommerlager: PresetDefinition = {
       },
 
       // Waschzeug (Hygiene)
-      { id: 'lager-handtuecher', name: 'Handtücher (klein & groß)', category: 'Hygiene', importance: 'pflicht', quantity: 2, icon: '🛁' },
+      {
+        id: 'lager-handtuecher',
+        name: 'Handtücher (klein & groß)',
+        category: 'Hygiene',
+        importance: 'pflicht',
+        quantity: 2,
+        icon: '🛁',
+        note: 'Ein kleines und ein großes Handtuch',
+      },
       { id: 'lager-duschzeug', name: 'Duschgel & Shampoo', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '🧴' },
       { id: 'lager-kamm', name: 'Kamm / Bürste', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '💇' },
       { id: 'lager-mueckenspray', name: 'Insektenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
@@ -75,7 +92,15 @@ const sommerlager: PresetDefinition = {
       // Geschirr (Ausrüstung)
       { id: 'lager-trinkflasche', name: 'Trinkflasche (auf Dichtigkeit prüfen)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '💧' },
       { id: 'lager-besteck', name: 'Besteck', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🍴' },
-      { id: 'lager-teller', name: 'Teller (tief & flach, Plastik)', category: 'Ausrüstung', importance: 'pflicht', quantity: 2, icon: '🍽️' },
+      {
+        id: 'lager-teller',
+        name: 'Teller (tief & flach, Plastik)',
+        category: 'Ausrüstung',
+        importance: 'pflicht',
+        quantity: 2,
+        icon: '🍽️',
+        note: 'Ein tiefer und ein flacher Teller',
+      },
       { id: 'lager-brotdose', name: 'Brotdose', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🥪' },
       { id: 'lager-becher', name: 'Tasse / Becher (Plastik)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🥤' },
       { id: 'lager-trockentuch', name: 'Trockentuch', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🧻' },
@@ -93,6 +118,7 @@ const sommerlager: PresetDefinition = {
         importance: 'optional',
         quantity: { min: 1, max: 3 },
         icon: '✏️',
+        note: rangeNote(1, 3),
       },
 
       // Nachtzeug – gemeinsamer Kern (unabhängig vom Geschlecht)

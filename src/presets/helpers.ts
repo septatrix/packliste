@@ -25,3 +25,21 @@ export function perDayRange(
 ): { min: number; max: number } {
   return { min: perDay(min, days, cap), max: perDay(max, days, cap) };
 }
+
+/**
+ * Human-readable explanation of a `perDay`/`perDayRange` computation, for
+ * an item's `note` field (shown in the info-icon tooltip alongside its
+ * source preset). Call with the same arguments as the matching `perDay`
+ * call so the note always matches what was actually computed.
+ */
+export function perDayNote(count: number, days: number, cap?: number): string {
+  const raw = count * days;
+  return cap !== undefined && raw > cap
+    ? `${count} pro Tag × ${days} Tage, gedeckelt bei ${cap}`
+    : `${count} pro Tag × ${days} Tage`;
+}
+
+/** Explanation for an author-chosen (not day-scaled) {min, max} range. */
+export function rangeNote(min: number, max: number): string {
+  return `Frei wählbar zwischen ${min} und ${max}`;
+}

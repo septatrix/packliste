@@ -37,10 +37,9 @@ const selectedPresets = computed<PresetDefinition[]>(() =>
     .filter((preset): preset is PresetDefinition => preset !== undefined),
 );
 
-const categories = computed(() => {
-  if (selectedPresets.value.length === 0) return [];
-  return resolveList(deriveParams(tripSelection), [base, ...selectedPresets.value]);
-});
+// `base` is always merged in, even with zero activities selected — the
+// universal essentials don't depend on having picked an activity.
+const categories = computed(() => resolveList(deriveParams(tripSelection), [base, ...selectedPresets.value]));
 
 const allItems = computed<ResolvedItem[]>(() => categories.value.flatMap((c) => c.items));
 const itemById = computed(() => new Map(allItems.value.map((item) => [item.id, item])));
@@ -75,16 +74,18 @@ function onAmountChange(itemId: string, amount: number) {
 
     <ParameterForm :model-value="tripSelection" :preset-options="presetOptions" @update:model-value="onSelectionUpdate" />
 
-    <template v-if="selectedPresets.length > 0">
-      <PackingList
-        :categories="categories"
-        :item-progress="itemProgress"
-        @state-change="onStateChange"
-        @amount-change="onAmountChange"
-      />
-      <TomorrowList :items="allItems" :item-progress="itemProgress" />
-    </template>
-    <p v-else class="hint">Bitte wähle oben mindestens eine Aktivität aus, um deine Packliste zu erstellen.</p>
+    <p v-if="selectedPresets.length === 0" class="hint">
+      Noch keine Aktivität ausgewählt — hier ist schon mal die Basis-Packliste. Wähle oben eine oder mehrere Aktivitäten
+      für zusätzliche, aktivitätsspezifische Artikel.
+    </p>
+
+    <PackingList
+      :categories="categories"
+      :item-progress="itemProgress"
+      @state-change="onStateChange"
+      @amount-change="onAmountChange"
+    />
+    <TomorrowList :items="allItems" :item-progress="itemProgress" />
 
     <PresetInspector
       :open="inspectorOpen"

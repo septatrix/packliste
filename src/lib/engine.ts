@@ -11,6 +11,11 @@ export interface ResolvedItem {
   quantityLabel: string;
   quantityMin: number;
   quantityMax: number;
+  /** Which preset produced this item, for the info-icon tooltip. */
+  sourceId: string;
+  sourceName: string;
+  /** Optional explanation of how quantityLabel was computed (see Item.note). */
+  note?: string;
 }
 
 export interface ResolvedCategory {
@@ -75,6 +80,9 @@ export function resolveList(params: Params, presets: PresetDefinition[]): Resolv
         quantityLabel: label,
         quantityMin: min,
         quantityMax: max,
+        sourceId: preset.id,
+        sourceName: preset.name,
+        note: item.note,
       };
       const bucket = byCategory.get(item.category);
       if (bucket) {

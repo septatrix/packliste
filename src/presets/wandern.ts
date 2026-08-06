@@ -1,5 +1,5 @@
 import type { Item, PresetDefinition } from '../lib/schema';
-import { perDay } from './helpers';
+import { perDay, perDayNote, rangeNote } from './helpers';
 
 const wandern: PresetDefinition = {
   id: 'wandern',
@@ -25,6 +25,7 @@ const wandern: PresetDefinition = {
         importance: 'pflicht',
         quantity: { min: 1, max: 2 },
         icon: '👖',
+        note: rangeNote(1, 2),
       },
       {
         id: 'wandern-funktionsshirt',
@@ -33,6 +34,7 @@ const wandern: PresetDefinition = {
         importance: 'pflicht',
         quantity: perDay(1, params.days, 5),
         icon: '👕',
+        note: perDayNote(1, params.days, 5),
       },
       {
         id: 'wandern-wandersocken',
@@ -41,6 +43,7 @@ const wandern: PresetDefinition = {
         importance: 'pflicht',
         quantity: perDay(1, params.days),
         icon: '🧦',
+        note: perDayNote(1, params.days),
       },
       { id: 'wandern-erste-hilfe', name: 'Erste-Hilfe-Set', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🩹' },
       { id: 'wandern-karte', name: 'Wanderkarte / GPS-Gerät', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🗺️' },

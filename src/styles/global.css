@@ -8,15 +8,15 @@
   --color-accent-contrast: #ffffff;
 
   --color-state-eingepackt: #2f6f4f;
-  --color-state-eingepackt-bg: #e3f1e8;
   --color-state-nicht-benoetigt: #8a8579;
-  --color-state-nicht-benoetigt-bg: #eeece7;
   --color-state-morgen: #b5651d;
   --color-state-morgen-bg: #fbe9d7;
-  --color-state-offen-bg: #ffffff;
 
   --color-pflicht: #b3261e;
   --color-optional: #6b6558;
+
+  /* Alternating row background for the table-style item list. */
+  --color-zebra-bg: #edebe3;
 
   --radius: 0.5rem;
 }
@@ -32,15 +32,14 @@
     --color-accent-contrast: #0d1410;
 
     --color-state-eingepackt: #6bbf8e;
-    --color-state-eingepackt-bg: #1c3226;
     --color-state-nicht-benoetigt: #9a978d;
-    --color-state-nicht-benoetigt-bg: #2a2b2d;
     --color-state-morgen: #e2a25c;
     --color-state-morgen-bg: #3a2a14;
-    --color-state-offen-bg: #212327;
 
     --color-pflicht: #e2837c;
     --color-optional: #a3a29b;
+
+    --color-zebra-bg: #262830;
   }
 }
 
@@ -53,14 +52,12 @@
   --color-accent: #6bbf8e;
   --color-accent-contrast: #0d1410;
   --color-state-eingepackt: #6bbf8e;
-  --color-state-eingepackt-bg: #1c3226;
   --color-state-nicht-benoetigt: #9a978d;
-  --color-state-nicht-benoetigt-bg: #2a2b2d;
   --color-state-morgen: #e2a25c;
   --color-state-morgen-bg: #3a2a14;
-  --color-state-offen-bg: #212327;
   --color-pflicht: #e2837c;
   --color-optional: #a3a29b;
+  --color-zebra-bg: #262830;
 }
 
 :root[data-theme='light'] {
@@ -72,14 +69,12 @@
   --color-accent: #2f6f4f;
   --color-accent-contrast: #ffffff;
   --color-state-eingepackt: #2f6f4f;
-  --color-state-eingepackt-bg: #e3f1e8;
   --color-state-nicht-benoetigt: #8a8579;
-  --color-state-nicht-benoetigt-bg: #eeece7;
   --color-state-morgen: #b5651d;
   --color-state-morgen-bg: #fbe9d7;
-  --color-state-offen-bg: #ffffff;
   --color-pflicht: #b3261e;
   --color-optional: #6b6558;
+  --color-zebra-bg: #edebe3;
 }
 
 * {
@@ -250,16 +245,24 @@ body {
   column-gap: 1.25rem;
 }
 
+/* Each category renders as a plain table: a header row plus flush,
+   alternating-color item rows — deliberately not a set of individual
+   rounded "cards", so it reads as a familiar report-style table both on
+   screen and (especially) on paper. */
 .category {
   break-inside: avoid-column;
   margin-bottom: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) * 0.6);
+  overflow: hidden;
 }
 
 .category h2 {
   font-size: 0.95rem;
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  padding-bottom: 0.25rem;
-  margin: 0 0 0.35rem;
 }
 
 .item-row {
@@ -267,22 +270,33 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem;
-  padding: 0.25rem 0.4rem;
-  border-radius: calc(var(--radius) * 0.6);
-  border: 1px solid var(--color-border);
-  background: var(--color-state-offen-bg);
-  margin-bottom: 0.25rem;
+  padding: 0.3rem 0.5rem;
   font-size: 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+  border-left: 3px solid transparent;
+  background: var(--color-surface);
+  /* Ensure the zebra stripe actually prints instead of being suppressed
+     by the browser's default "no backgrounds" print economy mode. */
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
 }
 
+.item-row:nth-of-type(even) {
+  background: var(--color-zebra-bg);
+}
+
+.item-row:last-of-type {
+  border-bottom: none;
+}
+
+/* State is shown as a left-edge accent stripe rather than a filled
+   background, keeping the table look intact. */
 .item-row.state-eingepackt {
-  background: var(--color-state-eingepackt-bg);
-  border-color: var(--color-state-eingepackt);
+  border-left-color: var(--color-state-eingepackt);
 }
 
 .item-row.state-nicht_benoetigt {
-  background: var(--color-state-nicht-benoetigt-bg);
-  border-color: var(--color-state-nicht-benoetigt);
+  border-left-color: var(--color-state-nicht-benoetigt);
 }
 
 .item-row.state-nicht_benoetigt .item-name {
@@ -291,8 +305,7 @@ body {
 }
 
 .item-row.state-morgen {
-  background: var(--color-state-morgen-bg);
-  border-color: var(--color-state-morgen);
+  border-left-color: var(--color-state-morgen);
 }
 
 .item-info {
@@ -327,6 +340,19 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+.item-info-icon {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  cursor: help;
+}
+
+.item-info-icon:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-radius: 2px;
 }
 
 .item-quantity {
@@ -532,10 +558,13 @@ body {
     --color-text: #000000;
     --color-text-muted: #333333;
     --color-border: #000000;
-    --color-state-eingepackt-bg: #ffffff;
-    --color-state-nicht-benoetigt-bg: #ffffff;
     --color-state-morgen-bg: #ffffff;
-    --color-state-offen-bg: #ffffff;
+    /* Keep the zebra stripe visible (not forced to white like the rest of
+       the print palette) — the alternating rows are the point on paper. */
+    --color-zebra-bg: #ededed;
+    --color-state-eingepackt: #2f6f4f;
+    --color-state-nicht-benoetigt: #8a8579;
+    --color-state-morgen: #b5651d;
   }
 
   .app {
@@ -628,7 +657,8 @@ body {
   .state-button,
   .hint,
   .inspect-button,
-  .inspector-overlay {
+  .inspector-overlay,
+  .item-info-icon {
     display: none;
   }
 }
