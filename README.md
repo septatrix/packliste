@@ -1,9 +1,9 @@
 # Packliste
 
 A client-side web app for creating interactive travel/vacation packing lists.
-Pick one or more activity presets (Skifahren, Wandern, Sommerlager, …) —
-a trip can combine several, e.g. skiing *and* a swimming pool visit on the
-same vacation — plus trip parameters: start/end date (the duration is
+Pick one or more activity presets (Skifahren, Wandern, Sommerlager, Camping,
+Segeln, Motorradtour) — a trip can combine several, e.g. skiing *and* a
+swimming pool visit on the same vacation — plus trip parameters: start/end date (the duration is
 computed automatically), one or more climates (e.g. a destination with both
 hot days and cold nights), mode of travel, destination scope (inland /
 EU-Schengen / international), gender. Travel/destination/gender can be left
@@ -170,13 +170,25 @@ with a clear error instead of silently corrupting the list.
 pnpm validate:presets
 ```
 
-Runs every non-empty subset of activity presets (merged with `base`) across
-a full matrix of trip parameters — every climate subset (the powerset of
-all 4 values, including "none") × travel × destination × gender × several
-day counts, the latter three including `undefined`/"keine Angabe" — and
-checks for thrown exceptions, schema violations, and duplicate item IDs
-between any of the presets involved. ~28,600 combinations, runs in a few
-seconds. Useful as a quick regression check after editing a preset.
+Two passes, deliberately not one exhaustive cross product — which item ids
+a preset can produce doesn't depend on the specific parameter *values*
+(ids are static strings), so crossing every preset *subset* with the full
+parameter matrix would be wasted work that gets exponentially slower with
+every new preset (`2^presets`):
+
+1. Every individual activity preset (merged with `base`) against the full
+   parameter matrix — every climate subset (the powerset of all 4 values,
+   including "none") × travel × destination × gender × several day counts,
+   the latter three including `undefined`/"keine Angabe" — catching thrown
+   exceptions and schema violations. ~24,600 combinations.
+2. Every non-empty *subset* of activity presets (all `2^presets - 1` of
+   them, so this part does scale with preset count, but cheaply) against a
+   handful of parameter profiles chosen to each maximize which conditional
+   items are active — catching item-id collisions between two presets that
+   only surface when both are selected together.
+
+Runs in a few seconds regardless of how many presets are registered.
+Useful as a quick regression check after editing a preset.
 
 ## Architecture
 
