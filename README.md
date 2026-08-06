@@ -275,6 +275,9 @@ Useful as a quick regression check after editing a preset.
   by category in a fixed display order.
 - `src/lib/storage.ts` — `localStorage` persistence for the trip selection
   (dates included) and per-item progress (`{ state, amount }`).
+- `src/lib/queryParams.ts` — reads URL query params to prefill the trip
+  selection on load (see [Prefilling via URL query
+  params](#prefilling-via-url-query-params) below).
 - `src/presets/` — the preset modules described above.
 - `src/components/` — `PackingApp.vue` (root island) → `ParameterForm.vue`
   (trip parameters, including the start/end date pickers and the
@@ -325,6 +328,58 @@ bei 8"`, or `rangeNote(1, 2)` → `"Frei wählbar zwischen 1 und 2"` (both in
 `presets/helpers.ts`). Items with a plain fixed quantity and no interesting
 calculation just show their source preset, which is still useful ("why is
 this in my list?").
+
+## Prefilling via URL query params
+
+The trip selection can be prefilled from URL query params, so a link like
+
+```
+/?activities=skifahren,wandern&climate=kalt,frostig&start=2026-12-20&end=2026-12-27&travel=auto&destination=eu_schengen&gender=divers
+```
+
+opens straight into that trip already set up — useful for sharing a
+particular trip's parameters, or linking in from another page. All params
+are optional and independent: `PackingApp.vue` first resolves the trip
+selection the normal way (`localStorage`, or the built-in default if
+there's none yet), then `applyQueryOverrides()` (`src/lib/queryParams.ts`)
+overlays only the query params actually present in the URL on top of that —
+a link with just `?activities=…` leaves every other field (dates, climate,
+travel, …) exactly as `localStorage`/the default would have set it.
+
+| Param | Maps to | Format |
+| --- | --- | --- |
+| `activities` | `presetIds` | comma-separated preset ids (`skifahren`, `wandern`, `sommerlager`, `camping`, `segeln`, `motorrad`) |
+| `climate` | `climate` | comma-separated (`warm`, `mild`, `kalt`, `frostig`) |
+| `start` | `startDate` | `JJJJ-MM-TT` |
+| `end` | `endDate` | `JJJJ-MM-TT` |
+| `travel` | `travel` | `auto` \| `bahn` \| `flugzeug` |
+| `destination` | `destination` | `inland` \| `eu_schengen` \| `international` |
+| `gender` | `gender` | `divers` \| `maennlich` \| `weiblich` |
+
+A few deliberate edge-case decisions in `tripSelectionFromQuery()`:
+
+- **`activities`/`climate` are arrays, so an explicit empty value
+  (`?activities=`) is a valid override on its own** — "select none of
+  these", the same "keine Angabe" meaning an empty array already has
+  everywhere else in the app, not "ignore this param since it's empty."
+  Unknown entries in a comma list (a typo'd preset id, an invalid climate
+  value) are dropped individually rather than invalidating the whole list.
+- **`travel`/`destination`/`gender` are single optional values, so there's
+  no empty-array equivalent** — a present-but-unrecognized value (including
+  an empty string, `?travel=`) is treated the same as an explicit "keine
+  Angabe" (`undefined`) instead of being silently ignored, matching how the
+  rest of the schema already treats an unset value as meaningful, not
+  missing.
+- **A `start`/`end` pair where the end lands before the start** is the one
+  case query overrides can produce a genuinely invalid `TripSelection`
+  (every other field is validated field-by-field, so nothing else can make
+  the merge fail). `applyQueryOverrides()` catches this via
+  `TripSelectionSchema.safeParse()` and drops just the date overrides
+  (logging a `console.warn`), keeping whatever other overrides were valid —
+  a malformed link degrades gracefully instead of failing to load at all.
+
+This only reads from the URL on initial load; the app doesn't rewrite the
+URL as the user changes the form afterward.
 
 ## Preset inspector
 

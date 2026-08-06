@@ -8,6 +8,7 @@ import { DEFAULT_TRIP_SELECTION, deriveParams, type ItemState, type PresetDefini
 import { activityPresets, base, findActivityPreset } from '../presets';
 import { resolveList, type ResolvedItem } from '../lib/engine';
 import { loadItemProgress, loadTripSelection, saveItemProgress, saveTripSelection } from '../lib/storage';
+import { applyQueryOverrides } from '../lib/queryParams';
 
 const props = defineProps<{ presetCode: PresetCodeEntry[] }>();
 
@@ -17,12 +18,16 @@ const presetOptions = activityPresets.map((preset) => ({
   description: preset.description,
 }));
 
-const tripSelection = reactive<TripSelection>(
+// Query-param overrides (?activities=skifahren,wandern&climate=kalt&start=...&
+// end=...&travel=...&destination=...&gender=...) are applied on top of
+// whatever localStorage/the default would otherwise produce, so a shared
+// link can prefill only the fields it specifies and leave the rest as-is.
+const storedOrDefaultSelection: TripSelection =
   loadTripSelection() ?? {
     ...DEFAULT_TRIP_SELECTION,
     presetIds: activityPresets[0] ? [activityPresets[0].id] : [],
-  },
-);
+  };
+const tripSelection = reactive<TripSelection>(applyQueryOverrides(storedOrDefaultSelection, window.location.search));
 const itemProgress = reactive(loadItemProgress());
 const inspectorOpen = ref(false);
 

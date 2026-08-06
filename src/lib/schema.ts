@@ -124,7 +124,7 @@ export interface PresetDefinition {
   resolveItems(params: Params): Item[];
 }
 
-const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Erwartetes Format: JJJJ-MM-TT');
+export const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Erwartetes Format: JJJJ-MM-TT');
 
 /**
  * What the user actually picks in `ParameterForm` and what gets persisted:
