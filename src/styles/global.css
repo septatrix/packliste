@@ -398,10 +398,8 @@ body {
   flex: 1 1 auto;
 }
 
-.item-icon {
-  flex: none;
-  font-size: 1.1rem;
-  line-height: 1;
+.print-summary {
+  display: none;
 }
 
 .item-importance-dot {
@@ -703,6 +701,19 @@ body {
     padding: 0;
   }
 
+  .app-header h1 {
+    font-size: 1.2rem;
+    margin: 0;
+  }
+
+  .app-header p {
+    display: none;
+  }
+
+  .categories {
+    column-gap: 0.75rem;
+  }
+
   /* The interactive four-way state control means nothing on paper; a
      hand-drawable checkbox in front of each item does. */
   .item-state {
@@ -712,7 +723,7 @@ body {
   .item-row::before {
     content: '☐';
     flex: none;
-    font-size: 1rem;
+    font-size: 0.8rem;
     line-height: 1;
   }
 
@@ -720,7 +731,9 @@ body {
     border: none;
     background: transparent;
     padding: 0;
-    width: auto;
+    width: 1.5rem;
+    font-size: 0.8rem;
+    text-align: right;
     -moz-appearance: textfield;
   }
 
@@ -730,16 +743,14 @@ body {
     margin: 0;
   }
 
-  /* Keep the override visible on paper too — a plain underline rather
-     than the on-screen box, consistent with the no-outlines print style. */
   .item-amount.item-amount-overridden {
     border: none;
-    border-bottom: 2px solid var(--color-accent);
+    border-bottom: 1px solid var(--color-accent);
   }
 
   .item-amount.item-amount-under-recommended {
     border: none;
-    border-bottom: 2px solid var(--color-warning);
+    border-bottom: 1px solid var(--color-warning);
   }
 
   .progress {
@@ -747,46 +758,56 @@ body {
   }
 
   .parameter-form {
+    display: block;
     border: none;
     padding: 0;
     background: transparent;
+    margin-bottom: 0.4rem;
   }
 
-  .parameter-form select,
-  .parameter-form input {
-    border: none;
-    background: transparent;
-    padding: 0;
-    appearance: none;
-    -webkit-appearance: none;
+  .parameter-form .field {
+    display: none;
+  }
+
+  .parameter-form .print-summary {
+    display: block;
+    margin: 0;
     font-weight: 600;
+    font-size: 0.85rem;
   }
 
-  .parameter-form input[type='date']::-webkit-calendar-picker-indicator {
-    display: none;
+  .category {
+    break-inside: avoid;
+    margin-bottom: 0.4rem;
   }
 
-  /* Toggle chips print as a plain text summary of what was actually
-     selected — unchecked options are dropped instead of shown unchecked. */
-  .toggle-chip {
-    border: none;
-    background: transparent;
-    padding: 0;
-    margin-right: 0.6rem;
-    font-weight: 600;
+  .category h2 {
+    font-size: 0.85rem;
+    padding: 0.2rem 0.3rem;
   }
 
-  .toggle-chip:not(.active) {
-    display: none;
-  }
-
-  .toggle-chip-input {
-    display: none;
-  }
-
-  .category,
   .item-row {
     break-inside: avoid;
+    padding: 0.1rem 0.3rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    gap: 0.25rem;
+  }
+
+  .item-row::before {
+    font-size: 0.8rem;
+  }
+
+  .item-info {
+    gap: 0.2rem;
+  }
+
+  .item-controls {
+    display: none;
+  }
+
+  .item-importance-dot {
+    display: none;
   }
 
   .state-button,
