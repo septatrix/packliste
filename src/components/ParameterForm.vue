@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { daysBetweenInclusive } from '../lib/dates';
-import type { Climate, TripSelection } from '../lib/schema';
+import type { Climate, PresetVariable, TripSelection } from '../lib/schema';
 
 const props = defineProps<{
   modelValue: TripSelection;
-  presetOptions: { id: string; name: string; description?: string }[];
+  presetOptions: { id: string; name: string; description?: string; variables?: PresetVariable[] }[];
 }>();
 const emit = defineEmits<{ 'update:modelValue': [value: TripSelection] }>();
 
@@ -54,6 +54,28 @@ const selectedDescriptions = computed(() =>
   props.presetOptions.filter((preset) => props.modelValue.presetIds.includes(preset.id)).map((preset) => preset.description),
 );
 
+// Preset-specific variables (e.g. Sommerlager's "Rolle") only make sense —
+// and are only shown — while their preset is actually selected.
+const presetsWithVariables = computed(() =>
+  props.presetOptions.filter(
+    (preset) => props.modelValue.presetIds.includes(preset.id) && preset.variables && preset.variables.length > 0,
+  ),
+);
+
+function presetVarValue(presetId: string, variable: PresetVariable): string {
+  return props.modelValue.presetVars[presetId]?.[variable.id] ?? variable.default;
+}
+
+function setPresetVar(presetId: string, variableId: string, value: string) {
+  emit('update:modelValue', {
+    ...props.modelValue,
+    presetVars: {
+      ...props.modelValue.presetVars,
+      [presetId]: { ...props.modelValue.presetVars[presetId], [variableId]: value },
+    },
+  });
+}
+
 const tripDays = computed(() => daysBetweenInclusive(props.modelValue.startDate, props.modelValue.endDate));
 
 // Start/end date need cross-field correction (keep endDate >= startDate),
@@ -94,6 +116,22 @@ function setEndDate(value: string) {
         </label>
       </div>
       <p v-for="description in selectedDescriptions" :key="description" class="field-hint">{{ description }}</p>
+    </div>
+
+    <div v-for="preset in presetsWithVariables" :key="preset.id" class="field field-wide">
+      <span class="field-label">{{ preset.name }}</span>
+      <div class="preset-variable-group">
+        <div v-for="variable in preset.variables" :key="variable.id" class="field">
+          <label :for="`pv-${preset.id}-${variable.id}`">{{ variable.label }}</label>
+          <select
+            :id="`pv-${preset.id}-${variable.id}`"
+            :value="presetVarValue(preset.id, variable)"
+            @change="setPresetVar(preset.id, variable.id, ($event.target as HTMLSelectElement).value)"
+          >
+            <option v-for="option in variable.options" :key="option.value" :value="option.value">{{ option.label }}</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <div class="field">

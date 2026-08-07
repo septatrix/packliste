@@ -123,8 +123,10 @@ body {
 }
 
 .app {
-  /* A4 width as a reference point: wide enough for a two-column list. */
-  max-width: 210mm;
+  /* Wide enough that item names essentially never need to wrap or ellipsize
+     within a two-column list — screen-only, print uses its own A4 layout
+     (see .app inside @media print below). */
+  max-width: 1600px;
   margin: 0 auto;
   padding: 1.5rem 1rem 4rem;
 }
@@ -206,6 +208,12 @@ body {
   grid-column: 1 / -1;
 }
 
+.preset-variable-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1rem;
+}
+
 .field-label {
   font-size: 0.85rem;
   color: var(--color-text-muted);
@@ -261,6 +269,34 @@ body {
   margin-bottom: 0.75rem;
 }
 
+/* Lets a tool be "armed" so clicking anywhere on an item row (see ItemRow)
+   marks it, instead of always needing the small per-item state buttons. */
+.tool-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tool-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.tool-button.active {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+
 /* Print-like two-column flow (CSS multi-column, not JS-balanced) so a
    category's items always stay together within one column. */
 .categories {
@@ -282,7 +318,7 @@ body {
 }
 
 .category h2 {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   margin: 0;
   padding: 0.4rem 0.5rem 0.35rem;
   background: var(--color-surface);
@@ -294,15 +330,24 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.4rem;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.85rem;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 1rem;
   border-left: 3px solid transparent;
   background: var(--color-surface);
   /* Ensure the zebra stripe actually prints instead of being suppressed
      by the browser's default "no backgrounds" print economy mode. */
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
+}
+
+.item-row.tool-active {
+  cursor: pointer;
+}
+
+.item-row.tool-active:hover {
+  outline: 1px dashed var(--color-accent);
+  outline-offset: -1px;
 }
 
 .item-row:nth-of-type(even) {
@@ -355,7 +400,7 @@ body {
 
 .item-icon {
   flex: none;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   line-height: 1;
 }
 
@@ -371,17 +416,19 @@ body {
   background: var(--color-pflicht);
 }
 
+/* Deliberately no truncation: a long item name wraps onto a second line
+   instead of ellipsizing, since an ellipsis on screen can only be resolved
+   by hovering (see :title below) — a linebreak keeps the full name always
+   visible instead of hiding part of it behind a tooltip. */
 .item-name {
   font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
   min-width: 0;
 }
 
 .item-info-icon {
   flex: none;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: var(--color-text-muted);
   cursor: help;
 }
@@ -394,7 +441,7 @@ body {
 
 .item-quantity {
   color: var(--color-text-muted);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
 }
 
 .item-controls {
@@ -405,14 +452,14 @@ body {
 }
 
 .item-amount {
-  width: 2.4rem;
-  padding: 0.1rem 0.2rem;
+  width: 2.8rem;
+  padding: 0.15rem 0.25rem;
   text-align: center;
   border-radius: calc(var(--radius) * 0.5);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 /* Highlights the amount once it's been changed away from the suggested
@@ -440,10 +487,10 @@ body {
 }
 
 .state-button {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   line-height: 1;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.7rem;
+  height: 1.7rem;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -737,14 +784,6 @@ body {
     display: none;
   }
 
-  /* No hover tooltip on paper, so a truncated name would lose information
-     permanently — let it wrap instead of ellipsizing for print. */
-  .item-name {
-    overflow: visible;
-    text-overflow: unset;
-    white-space: normal;
-  }
-
   .category,
   .item-row {
     break-inside: avoid;
@@ -754,7 +793,8 @@ body {
   .hint,
   .inspect-button,
   .inspector-overlay,
-  .item-info-icon {
+  .item-info-icon,
+  .tool-bar {
     display: none;
   }
 }

@@ -17,6 +17,7 @@ const presetOptions = activityPresets.map((preset) => ({
   id: preset.id,
   name: preset.name,
   description: preset.description,
+  variables: preset.variables,
 }));
 
 // Query-param overrides (?activities=skifahren,wandern&climate=kalt&start=...&
@@ -31,6 +32,10 @@ const storedOrDefaultSelection: TripSelection =
 const tripSelection = reactive<TripSelection>(applyQueryOverrides(storedOrDefaultSelection, window.location.search));
 const itemProgress = reactive(loadItemProgress());
 const inspectorOpen = ref(false);
+// The "click to mark" tool (see PackingList/ItemRow): while set, clicking
+// anywhere on an item row applies this state instead of requiring the
+// small per-item state buttons. Session-only — not persisted.
+const activeTool = ref<ItemState | null>(null);
 
 watch(tripSelection, (value) => saveTripSelection({ ...value }), { deep: true });
 watch(itemProgress, (value) => saveItemProgress({ ...value }), { deep: true });
@@ -45,7 +50,9 @@ const selectedPresets = computed<PresetDefinition[]>(() =>
 
 // `base` is always merged in, even with zero activities selected — the
 // universal essentials don't depend on having picked an activity.
-const categories = computed(() => resolveList(deriveParams(tripSelection), [base, ...selectedPresets.value]));
+const categories = computed(() =>
+  resolveList(deriveParams(tripSelection), [base, ...selectedPresets.value], tripSelection.presetVars),
+);
 
 const allItems = computed<ResolvedItem[]>(() => categories.value.flatMap((c) => c.items));
 const itemById = computed(() => new Map(allItems.value.map((item) => [item.id, item])));
@@ -88,8 +95,10 @@ function onAmountChange(itemId: string, amount: number) {
     <PackingList
       :categories="categories"
       :item-progress="itemProgress"
+      :active-tool="activeTool"
       @state-change="onStateChange"
       @amount-change="onAmountChange"
+      @update:active-tool="(tool) => (activeTool = tool)"
     />
     <TomorrowList :items="allItems" :item-progress="itemProgress" />
     <NotNeededList :items="allItems" :item-progress="itemProgress" />

@@ -3,8 +3,19 @@ import { computed } from 'vue';
 import type { ResolvedItem } from '../lib/engine';
 import type { ItemProgress, ItemState } from '../lib/schema';
 
-const props = defineProps<{ item: ResolvedItem; progress: ItemProgress }>();
+const props = defineProps<{ item: ResolvedItem; progress: ItemProgress; activeTool: ItemState | null }>();
 const emit = defineEmits<{ 'update:state': [state: ItemState]; 'update:amount': [amount: number] }>();
+
+// With a tool active (see PackingList), clicking anywhere on the row applies
+// it — a second click on an already-matching item clears back to "offen",
+// so the tool also works as an undo. Clicks inside .item-controls (the
+// amount input and the explicit per-state buttons) are stopped before they
+// reach this handler (see @click.stop in the template) so they keep their
+// own, tool-independent behavior.
+function onRowClick() {
+  if (!props.activeTool) return;
+  emit('update:state', props.progress.state === props.activeTool ? 'offen' : props.activeTool);
+}
 
 const STATES: { value: ItemState; icon: string; label: string }[] = [
   { value: 'offen', icon: '○', label: 'Offen' },
@@ -52,7 +63,11 @@ function onAmountInput(event: Event) {
 </script>
 
 <template>
-  <div class="item-row" :class="`state-${progress.state}`">
+  <div
+    class="item-row"
+    :class="[`state-${progress.state}`, { 'tool-active': activeTool }]"
+    @click="onRowClick"
+  >
     <div class="item-info">
       <span class="item-icon" aria-hidden="true">{{ item.icon }}</span>
       <span
@@ -63,7 +78,7 @@ function onAmountInput(event: Event) {
       <span class="item-name" :title="item.name">{{ item.name }}</span>
       <span class="item-info-icon" tabindex="0" role="note" :aria-label="infoText" :title="infoText">ⓘ</span>
     </div>
-    <div class="item-controls">
+    <div class="item-controls" @click.stop>
       <input
         v-if="hasQuantity"
         class="item-amount"
