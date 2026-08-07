@@ -90,6 +90,7 @@ const presetsWithVariables = computed(() =>
 );
 
 const tripDays = computed(() => daysBetweenInclusive(props.modelValue.startDate, props.modelValue.endDate));
+const tripNights = computed(() => Math.max(0, tripDays.value - 1));
 
 // Start/end date need cross-field correction (keep endDate >= startDate),
 // so they get dedicated setters instead of the generic field() helper.
@@ -110,6 +111,7 @@ function setEndDate(value: string) {
 
 <template>
   <form class="parameter-form" @submit.prevent>
+    <p class="print-summary">{{ tripDays }} {{ tripDays === 1 ? 'Tag' : 'Tage' }}, {{ tripNights }} {{ tripNights === 1 ? 'Übernachtung' : 'Übernachtungen' }}</p>
     <div class="field field-wide">
       <span class="field-label">Basis</span>
       <div class="toggle-group" role="group" aria-label="Basis-Packliste ein-/ausschließen">
