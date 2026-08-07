@@ -42,6 +42,15 @@ function allSubsets<T>(items: T[]): T[][] {
   return [[], ...nonEmptySubsets(items)];
 }
 
+/** Every combination of a preset's own variables (e.g. Sommerlager's "Rolle"), fully specified — `[{}]` if it has none. */
+function presetVariableCombos(preset: PresetDefinition): Record<string, string>[] {
+  const variables = preset.variables ?? [];
+  return variables.reduce<Record<string, string>[]>(
+    (combos, variable) => combos.flatMap((combo) => variable.options.map((option) => ({ ...combo, [variable.id]: option.value }))),
+    [{}],
+  );
+}
+
 const itemArraySchema = z.array(ItemSchema);
 let errorCount = 0;
 
@@ -49,10 +58,10 @@ let errorCount = 0;
 // used for the naming-convention check after Pass 1.
 const idsByPreset = new Map<string, Set<string>>();
 
-function recordAndValidate(preset: PresetDefinition, params: Params, contextLabel: string): void {
+function recordAndValidate(preset: PresetDefinition, params: Params, vars: Record<string, string>, contextLabel: string): void {
   let rawItems: unknown;
   try {
-    rawItems = preset.resolveItems(params);
+    rawItems = preset.resolveItems(params, vars);
   } catch (err) {
     errorCount += 1;
     console.error(`Preset "${preset.id}" warf einen Fehler (${contextLabel}):`, err);
@@ -85,23 +94,26 @@ const dayCounts = [1, 3, 7, 14];
 let matrixCombinations = 0;
 
 for (const preset of activityPresets) {
+  const varCombos = presetVariableCombos(preset);
   for (const climate of climateCombos) {
     for (const travel of travels) {
       for (const destination of destinations) {
         for (const gender of genders) {
           for (const days of dayCounts) {
-            matrixCombinations += 1;
-            const candidate: Params = { presetIds: [preset.id], climate, travel, destination, gender, days };
-            const parsedParams = ParamsSchema.safeParse(candidate);
-            if (!parsedParams.success) {
-              errorCount += 1;
-              console.error(`Ungültige Test-Parameter für "${preset.id}":`, parsedParams.error.message);
-              continue;
+            for (const vars of varCombos) {
+              matrixCombinations += 1;
+              const candidate: Params = { presetIds: [preset.id], climate, travel, destination, gender, days };
+              const parsedParams = ParamsSchema.safeParse(candidate);
+              if (!parsedParams.success) {
+                errorCount += 1;
+                console.error(`Ungültige Test-Parameter für "${preset.id}":`, parsedParams.error.message);
+                continue;
+              }
+              const params = parsedParams.data;
+              const contextLabel = `params=${JSON.stringify(params)}, vars=${JSON.stringify(vars)}`;
+              recordAndValidate(base, params, {}, contextLabel);
+              recordAndValidate(preset, params, vars, contextLabel);
             }
-            const params = parsedParams.data;
-            const contextLabel = `params=${JSON.stringify(params)}`;
-            recordAndValidate(base, params, contextLabel);
-            recordAndValidate(preset, params, contextLabel);
           }
         }
       }
@@ -154,6 +166,26 @@ for (const presets of activityPresetCombos) {
     } catch (err) {
       errorCount += 1;
       console.error(`resolveList() warf einen Fehler für Presets [${presetIds.join(', ')}] (params=${JSON.stringify(params)}):`, err);
+    }
+
+    // Also exercise every combination of each included preset's own
+    // variables (e.g. Sommerlager's "Rolle") — resolveList()'s merge and
+    // cross-preset exclusion (excludeItemIds) both depend on them.
+    for (const preset of presets) {
+      const varCombos = presetVariableCombos(preset);
+      if (varCombos.length <= 1) continue;
+      for (const vars of varCombos) {
+        mergeChecks += 1;
+        try {
+          resolveList(params, [base, ...presets], { [preset.id]: vars });
+        } catch (err) {
+          errorCount += 1;
+          console.error(
+            `resolveList() warf einen Fehler für Presets [${presetIds.join(', ')}] mit ${preset.id}-vars=${JSON.stringify(vars)} (params=${JSON.stringify(params)}):`,
+            err,
+          );
+        }
+      }
     }
   }
 }

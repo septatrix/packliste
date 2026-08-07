@@ -56,6 +56,18 @@ function formatQuantity(quantity: Quantity): { label: string; min: number; max: 
 }
 
 /**
+ * A preset's own variable values (see PresetVariable), defaulted from
+ * `preset.variables` and overridden by whatever the user picked in
+ * `presetVarValues[preset.id]` — so `resolveItems`/`excludeItemIds` always
+ * see a complete map, even before the user has touched the form (or for a
+ * trip selection saved before this variable existed).
+ */
+function resolveVars(preset: PresetDefinition, presetVarValues: Record<string, Record<string, string>>): Record<string, string> {
+  const defaults = Object.fromEntries((preset.variables ?? []).map((variable) => [variable.id, variable.default]));
+  return { ...defaults, ...presetVarValues[preset.id] };
+}
+
+/**
  * Run each preset's `resolveItems(params)`, validate the returned items
  * defensively, and group everything by category in a fixed display order.
  * All inclusion logic (gender, climate, destination, travel, per-day vs.
@@ -75,14 +87,23 @@ function formatQuantity(quantity: Quantity): { label: string; min: number; max: 
  * A single preset repeating its *own* id within one `resolveItems()` call
  * is a different situation — always an authoring mistake, never
  * intentional — and still throws.
+ *
+ * `presetVarValues` holds the user's choice for each preset's own variables
+ * (see PresetVariable), keyed by preset id then variable id — e.g.
+ * Sommerlager's "Rolle" (Kind/Leiter:in). It's passed to every preset's
+ * `resolveItems`/`excludeItemIds` already defaulted, see `resolveVars`.
  */
-export function resolveList(params: Params, presets: PresetDefinition[]): ResolvedCategory[] {
+export function resolveList(
+  params: Params,
+  presets: PresetDefinition[],
+  presetVarValues: Record<string, Record<string, string>> = {},
+): ResolvedCategory[] {
   const merged = new Map<string, ResolvedItem>();
 
   for (const preset of presets) {
     let rawItems: unknown;
     try {
-      rawItems = preset.resolveItems(params);
+      rawItems = preset.resolveItems(params, resolveVars(preset, presetVarValues));
     } catch (err) {
       throw new Error(`Preset "${preset.id}" warf einen Fehler in resolveItems(): ${String(err)}`);
     }
@@ -138,6 +159,16 @@ export function resolveList(params: Params, presets: PresetDefinition[]): Resolv
         sourceNames: [...existing.sourceNames, preset.name],
         note: item.note ?? existing.note,
       });
+    }
+  }
+
+  // Runs after every preset's items are merged, so a preset can drop an
+  // item regardless of which preset (itself or another) originally added
+  // it — e.g. Sommerlager removing "Smartphone" for children.
+  for (const preset of presets) {
+    if (!preset.excludeItemIds) continue;
+    for (const id of preset.excludeItemIds(params, resolveVars(preset, presetVarValues))) {
+      merged.delete(id);
     }
   }
 

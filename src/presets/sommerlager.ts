@@ -10,12 +10,27 @@ import { matchesGender, perDay, perDayNote, rangeNote } from './helpers';
  * Spannbettlaken) is always included; `divers` gets just that shared core
  * without assuming either assignment.
  */
+const ROLLE_KIND = 'kind';
+const ROLLE_LEITER = 'leiter';
+
 const sommerlager: PresetDefinition = {
   id: 'sommerlager',
   name: 'Sommerlager',
   description: 'Packliste für ein mehrtägiges Sommer-/Zeltlager.',
 
-  resolveItems(params): Item[] {
+  variables: [
+    {
+      id: 'rolle',
+      label: 'Rolle',
+      options: [
+        { value: ROLLE_KIND, label: 'Kind / Teilnehmer:in' },
+        { value: ROLLE_LEITER, label: 'Leiter:in' },
+      ],
+      default: ROLLE_KIND,
+    },
+  ],
+
+  resolveItems(params, vars): Item[] {
     const items: Item[] = [
       // Kleidung
       { id: 'lager-lange-hosen', name: 'Lange Hosen', category: 'Kleidung', importance: 'pflicht', quantity: { min: 1, max: 2 }, icon: '👖', note: rangeNote(1, 2) },
@@ -92,15 +107,6 @@ const sommerlager: PresetDefinition = {
       // Geschirr (Ausrüstung)
       { id: 'shared-trinkflasche', name: 'Trinkflasche (auf Dichtigkeit prüfen)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '💧' },
       { id: 'lager-besteck', name: 'Besteck', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🍴' },
-      {
-        id: 'lager-teller',
-        name: 'Teller (tief & flach, Plastik)',
-        category: 'Ausrüstung',
-        importance: 'pflicht',
-        quantity: 2,
-        icon: '🍽️',
-        note: 'Ein tiefer und ein flacher Teller',
-      },
       { id: 'lager-brotdose', name: 'Brotdose', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🥪' },
       { id: 'lager-becher', name: 'Tasse / Becher (Plastik)', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🥤' },
       { id: 'lager-trockentuch', name: 'Trockentuch', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🧻' },
@@ -173,7 +179,28 @@ const sommerlager: PresetDefinition = {
       });
     }
 
+    // Leiter:innen essen aus der Gemeinschaftsküche und bringen kein eigenes
+    // Geschirr mit — nur Teilnehmer:innen brauchen ihren eigenen Teller.
+    if (vars.rolle !== ROLLE_LEITER) {
+      items.push({
+        id: 'lager-teller',
+        name: 'Teller (tief & flach, Plastik)',
+        category: 'Ausrüstung',
+        importance: 'pflicht',
+        quantity: 2,
+        icon: '🍽️',
+        note: 'Ein tiefer und ein flacher Teller',
+      });
+    }
+
     return items;
+  },
+
+  // Kinder/Teilnehmer:innen sollen laut Lagerordnung kein eigenes Smartphone
+  // dabeihaben — entfernt das Basis-Preset-Item unabhängig davon, dass es
+  // dort (immer) hinzugefügt wird.
+  excludeItemIds(_params, vars): string[] {
+    return vars.rolle === ROLLE_KIND ? ['base-handy'] : [];
   },
 };
 

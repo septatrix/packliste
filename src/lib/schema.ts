@@ -116,12 +116,47 @@ export const ParamsSchema = z
   .strict();
 export type Params = z.infer<typeof ParamsSchema>;
 
+/**
+ * A single choice a preset exposes to the user (e.g. "Rolle: Kind/Leiter:in")
+ * beyond the global trip parameters in `Params`. Currently always rendered
+ * as a `<select>`; `default` is used both as the initial value and as the
+ * fallback whenever a trip selection predates this variable (or another
+ * preset's `presetVars` entry doesn't mention it).
+ */
+export const PresetVariableOptionSchema = z.object({ value: z.string().min(1), label: z.string().min(1) }).strict();
+export type PresetVariableOption = z.infer<typeof PresetVariableOptionSchema>;
+
+export const PresetVariableSchema = z
+  .object({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    options: z.array(PresetVariableOptionSchema).min(1),
+    default: z.string().min(1),
+  })
+  .strict();
+export type PresetVariable = z.infer<typeof PresetVariableSchema>;
+
 /** A packing preset: metadata plus the function that computes its items. */
 export interface PresetDefinition {
   id: string;
   name: string;
   description?: string;
-  resolveItems(params: Params): Item[];
+  /** Preset-specific choices shown in the form only while this preset is selected (see PresetVariable). */
+  variables?: PresetVariable[];
+  /**
+   * `vars` holds this preset's own variable values, keyed by `PresetVariable.id`
+   * (already defaulted — see `resolveVars` in lib/engine.ts), never other
+   * presets' variables.
+   */
+  resolveItems(params: Params, vars: Record<string, string>): Item[];
+  /**
+   * Optional: item ids to drop from the *final*, already-merged list — the
+   * only way a preset can affect an item contributed by a different preset
+   * (e.g. Sommerlager removing the base preset's "Smartphone" for children).
+   * Runs after every preset's resolveItems, so it doesn't matter which
+   * preset originally added the id.
+   */
+  excludeItemIds?(params: Params, vars: Record<string, string>): string[];
 }
 
 export const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Erwartetes Format: JJJJ-MM-TT');
@@ -141,6 +176,8 @@ export const TripSelectionSchema = z
     travel: TravelSchema.optional(),
     destination: DestinationSchema.optional(),
     gender: ParamGenderSchema.optional(),
+    /** Per-preset variable values (see PresetVariable), keyed by preset id then variable id. */
+    presetVars: z.record(z.string(), z.record(z.string(), z.string())).default({}),
   })
   .strict()
   .refine((selection) => selection.endDate >= selection.startDate, {
@@ -157,10 +194,11 @@ export const DEFAULT_TRIP_SELECTION: TripSelection = {
   travel: 'auto',
   destination: 'inland',
   gender: 'divers',
+  presetVars: {},
 };
 
 export function deriveParams(selection: TripSelection): Params {
-  const { startDate, endDate, ...rest } = selection;
+  const { startDate, endDate, presetVars: _presetVars, ...rest } = selection;
   return { ...rest, days: daysBetweenInclusive(startDate, endDate) };
 }
 
