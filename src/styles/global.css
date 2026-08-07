@@ -20,8 +20,15 @@
   --color-pflicht: #b3261e;
   --color-optional: #6b6558;
 
-  /* Alternating row background for the table-style item list. */
-  --color-zebra-bg: #edebe3;
+  /* Alternating row background for the table-style item list — kept close
+     to --color-surface so the stripe is only barely perceptible and never
+     competes with the state accent stripe on the left edge. */
+  --color-zebra-bg: #f6f4ef;
+
+  /* Highlighter-marker background painted behind a packed item's name,
+     like a highlighter pen swiped over paper — a translucent tint of
+     --color-state-eingepackt over --color-surface. */
+  --color-highlight-eingepackt: rgba(47, 111, 79, 0.22);
 
   /* Optional soft elevation in place of an outline (see .category); a
      shadow doesn't read well against a dark page background, so it's
@@ -49,7 +56,8 @@
     --color-pflicht: #e2837c;
     --color-optional: #a3a29b;
 
-    --color-zebra-bg: #262830;
+    --color-zebra-bg: #232529;
+    --color-highlight-eingepackt: rgba(107, 191, 142, 0.22);
     --shadow-elevation: none;
   }
 }
@@ -68,7 +76,8 @@
   --color-warning: #facc15;
   --color-pflicht: #e2837c;
   --color-optional: #a3a29b;
-  --color-zebra-bg: #262830;
+  --color-zebra-bg: #232529;
+  --color-highlight-eingepackt: rgba(107, 191, 142, 0.22);
   --shadow-elevation: none;
 }
 
@@ -86,7 +95,8 @@
   --color-warning: #ca8a04;
   --color-pflicht: #b3261e;
   --color-optional: #6b6558;
-  --color-zebra-bg: #edebe3;
+  --color-zebra-bg: #f6f4ef;
+  --color-highlight-eingepackt: rgba(47, 111, 79, 0.22);
   --shadow-elevation: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
@@ -309,12 +319,25 @@ body {
   border-left-color: var(--color-state-eingepackt);
 }
 
+/* Highlighter-marker effect: a translucent band drawn low behind the text
+   (not a full-height background) so it reads like a highlighter pen swipe
+   rather than a filled pill. */
+.item-row.state-eingepackt .item-name {
+  background: var(--color-highlight-eingepackt);
+  padding: 0.05em 0.3em;
+  border-radius: 2px;
+}
+
 .item-row.state-nicht_benoetigt {
   border-left-color: var(--color-warning);
 }
 
+/* Deliberately heavier and colored (rather than a thin currentColor line)
+   so a decided-against item reads as clearly crossed out, not just muted. */
 .item-row.state-nicht_benoetigt .item-name {
   text-decoration: line-through;
+  text-decoration-color: var(--color-warning);
+  text-decoration-thickness: 0.14em;
   color: var(--color-text-muted);
 }
 
@@ -440,6 +463,11 @@ body {
 
 /* --- Tomorrow list --- */
 
+.tomorrow-list,
+.not-needed-list {
+  margin-top: 1.25rem;
+}
+
 .tomorrow-list {
   border: 1px dashed var(--color-state-morgen);
   border-radius: var(--radius);
@@ -447,14 +475,32 @@ body {
   background: var(--color-state-morgen-bg);
 }
 
-.tomorrow-list h2 {
+.tomorrow-list h2,
+.not-needed-list h2 {
   margin-top: 0;
   font-size: 1.1rem;
 }
 
-.tomorrow-list ul {
+.tomorrow-list ul,
+.not-needed-list ul {
   margin: 0;
   padding-left: 1.25rem;
+}
+
+/* Mirrors .tomorrow-list's dashed callout, in the warning tone instead —
+   a parked list of items that were decided against, not just muted inline. */
+.not-needed-list {
+  border: 1px dashed var(--color-warning);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: var(--color-surface);
+}
+
+.not-needed-list li {
+  text-decoration: line-through;
+  text-decoration-color: var(--color-warning);
+  text-decoration-thickness: 0.14em;
+  color: var(--color-text-muted);
 }
 
 @media (max-width: 40rem) {
@@ -596,6 +642,7 @@ body {
        the print palette) — the alternating rows are the point on paper. */
     --color-zebra-bg: #ededed;
     --color-state-eingepackt: #2f6f4f;
+    --color-highlight-eingepackt: rgba(47, 111, 79, 0.22);
     --color-state-morgen: #b5651d;
     --color-warning: #ca8a04;
     --color-accent: #2f6f4f;

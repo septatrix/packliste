@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import ParameterForm from './ParameterForm.vue';
 import PackingList from './PackingList.vue';
 import TomorrowList from './TomorrowList.vue';
+import NotNeededList from './NotNeededList.vue';
 import PresetInspector, { type PresetCodeEntry } from './PresetInspector.vue';
 import { DEFAULT_TRIP_SELECTION, deriveParams, type ItemState, type PresetDefinition, type TripSelection } from '../lib/schema';
 import { activityPresets, base, findActivityPreset } from '../presets';
@@ -91,6 +92,7 @@ function onAmountChange(itemId: string, amount: number) {
       @amount-change="onAmountChange"
     />
     <TomorrowList :items="allItems" :item-progress="itemProgress" />
+    <NotNeededList :items="allItems" :item-progress="itemProgress" />
 
     <PresetInspector
       :open="inspectorOpen"
