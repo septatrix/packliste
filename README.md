@@ -3,16 +3,20 @@
 A client-side web app for creating interactive travel/vacation packing lists.
 Pick one or more activity presets (Skifahren, Wandern, Sommerlager, Camping,
 Segeln, Motorradtour) — a trip can combine several, e.g. skiing *and* a
-swimming pool visit on the same vacation — plus trip parameters: start/end date (the duration is
-computed automatically), one or more climates (e.g. a destination with both
-hot days and cold nights), mode of travel, destination scope (inland /
-EU-Schengen / international), gender. Travel/destination/gender can be left
-as "keine Angabe"; activities and climate can have none, one, or several
-selected at once — with zero activities picked, the universal base
-essentials still show, since those don't depend on an activity. Get a
-checklist with per-item quantities computed for your trip, shown with a
-small icon per item for quick scanning and an ⓘ info icon revealing which
-preset an item came from and how its quantity was computed. Track each
+swimming pool visit on the same vacation — plus the universal "Basis"
+preset (checked by default, but like any activity, can be unchecked if you
+just want an activity-specific list) and trip parameters: start/end date
+(the duration is computed automatically), one or more climates (e.g. a
+destination with both hot days and cold nights), mode of travel, destination
+scope (inland / EU-Schengen / international), gender. Travel/destination/
+gender can be left as "keine Angabe"; activities and climate can have none,
+one, or several selected at once. The current selection is always reflected
+in the URL (`?activities=…&climate=…&start=…`, …), so the address bar is a
+live, shareable permalink for whatever trip is currently shown — copy it any
+time, no separate "share" action needed. Get a checklist with per-item
+quantities computed for your trip, shown with a small icon per item for
+quick scanning and an ⓘ info icon revealing which preset an item came from
+and how its quantity was computed. Track each
 item as *offen*, *eingepackt*, *nicht benötigt*, or *für morgen* (things
 still needed that get collected on a separate "grab before leaving" list),
 and override the computed quantity per item if you want to pack a
@@ -125,9 +129,15 @@ A variable is identified only by its `id` — two presets that both claim
 `CLIMATE_VARIABLE` share *one* value (`vars.climate` is the same array in
 both `resolveItems` calls), not independent copies; that's what "claiming"
 means, and it's why climate ends up as a single answer for the whole trip
-even though almost every preset reads it. `base` is always active, so its
-claimed variables (all four shared ones) are effectively always shown in the
-form, exactly like when they were bespoke top-level fields. A preset that
+even though almost every preset reads it. `base` is selected by default
+(see [Basis is optional](#basis-is-optional) below), so in practice its
+claimed variables (all four shared ones) are shown in the form from the
+start, exactly like when they were bespoke top-level fields — but they're
+shown only while *some* currently active preset claims them, base or
+otherwise, not unconditionally: uncheck `base` and select only an activity
+that doesn't touch travel, and the "Verkehrsmittel" field disappears too
+(harmlessly — `vars.travel` may still hold a stored value from before, it
+just isn't read by anything active and isn't shown to edit). A preset that
 reads a variable should generally claim it too, even if some other active
 preset (usually `base`) already does — claiming is what guarantees the
 control and its default exist regardless of which other presets happen to
@@ -155,32 +165,28 @@ author never needs to touch date logic.
 `vars.climate`) are both arrays, not single values — a trip can combine
 several activities (skiing *and* a swimming-pool visit on the same vacation)
 and several climates (hot days, cold nights), and the resulting list is
-simply the union of whatever each selected value implies. `PackingApp.vue`
-resolves this by merging `base` with *every* matched preset in one
-`resolveList()` call — `engine.ts` itself was already written to merge an
-arbitrary list of presets, so no engine changes were needed, only threading
-an array through the UI/schema layer. `ParameterForm.vue` renders both as a
-row of toggle chips (checkboxes styled as pills) rather than a `<select>`,
-since more than one can be active — for `presetIds` always, for a claimed
-variable whenever its `multi` flag is set (see [Custom
-variables](#custom-variables) above).
+simply the union of whatever each selected value implies. `engine.ts` was
+already written to merge an arbitrary list of presets, so no engine changes
+were needed for either, only threading an array through the UI/schema
+layer. `ParameterForm.vue` renders both as a row of toggle chips (checkboxes
+styled as pills) rather than a `<select>`, since more than one can be active
+— for `presetIds` always, for a claimed variable whenever its `multi` flag
+is set (see [Custom variables](#custom-variables) above).
 
 An empty `climate`/`presetIds` array is "keine Angabe" — no toggle chip
 active. For `climate`, a plain `vars.climate?.includes('warm')` check is
 already falsy for an empty (or absent) array, so "no climate selected"
 naturally means "include none of the climate-conditional items". For
-`presetIds`, an empty array just means no *activity-specific* items are
-added — `PackingApp.vue` always merges `base` regardless
-(`resolveList(deriveParams(tripSelection), [base, ...selectedPresets],
-tripSelection.vars)`, unconditionally), so the universal essentials are
-never gated behind picking an activity; a non-blocking hint above the list
-suggests picking one for more.
+`presetIds`, an empty array means no items at all — `base` is not forced in
+(see [Basis is optional](#basis-is-optional) below) — and a non-blocking
+hint above the list explains what's currently missing (an activity, `base`,
+or both).
 
-Because activities can now be combined freely, `validate-presets.ts` tests
-every non-empty *subset* of registered activity presets (not just each one
-individually) merged with `base`, to catch item-id collisions between two
-different activity presets that would only surface when both are selected
-together.
+Because activities (and now `base`) can be freely combined or omitted,
+`validate-presets.ts` tests every non-empty *subset* of registered activity
+presets, each both with and without `base`, to catch item-id collisions
+between two different presets that would only surface when both are
+selected together.
 
 ### "Keine Angabe" (no selection)
 
@@ -212,10 +218,30 @@ left to each preset's plain conditionals:
 A new preset should apply the same judgment per field it conditions on —
 there's no framework-level switch to flip.
 
-There's always a `base` preset (`src/presets/base.ts`) merged in regardless
-of the chosen activity — universal essentials like documents, chargers, and
+### Basis is optional
+
+`src/presets/base.ts` — universal essentials like documents, chargers, and
 destination-dependent items (passport/visa/adapter/currency for
-international trips, liquids reminder for flights, etc.).
+international trips, liquids reminder for flights, etc.) — used to be
+unconditionally merged into every trip regardless of the chosen activity.
+It's now selected by default but otherwise an ordinary entry in
+`TripSelection.presetIds`, just like any activity preset: `ParameterForm.vue`
+renders it as its own toggle (separate from the "Aktivität" group, since
+it's not itself an activity), and unchecking it means exactly what it
+sounds like — the list becomes just whatever the selected activities
+contribute, with no generic essentials mixed in.
+
+`src/presets/index.ts` exports `allPresets` (`[base, ...activityPresets]`,
+`base` always first) as the canonical merge/display order.
+`PackingApp.vue`'s `selectedPresets` filters that fixed list down to
+whatever's in `presetIds`, rather than mapping over `presetIds` in
+whatever order the user happened to toggle things — that matters because
+`resolveList()`'s merge rule for a shared item is "last preset wins" (see
+[Cross-preset item deduplication](#cross-preset-item-deduplication) below),
+and that's only meaningful if `base`, the generic fallback, reliably comes
+first regardless of click order (e.g. someone unchecking then rechecking
+`base` shouldn't suddenly make its plain "Sonnencreme" win over Skifahren's
+more specific one just because it was re-added to `presetIds` last).
 
 **Adding a preset:** create `src/presets/<id>.ts` exporting a
 `PresetDefinition` as its default export, then register it in
@@ -256,8 +282,9 @@ id across *different* presets into a single row:
   numeric suggestion, since it means "you only own one of these, full stop."
 - **importance** — `pflicht` wins if *either* source says so.
 - **name / icon / category / note** — the *last* contributing preset (in
-  registration order) wins. This is meaningful because `base` is always
-  merged in first, so an activity's more specific naming (e.g. Skifahren's
+  registration order — `allPresets`, `base` first, see [Basis is
+  optional](#basis-is-optional) above) wins. This is meaningful whenever
+  `base` is included: an activity's more specific naming (e.g. Skifahren's
   "Sonnencreme mit hohem LSF" vs. base's plain "Sonnencreme") naturally
   overrides the generic base version rather than the other way around.
 - **provenance** — `sourceIds`/`sourceNames` accumulate every contributing
@@ -403,7 +430,7 @@ this in my list?").
 The trip selection can be prefilled from URL query params, so a link like
 
 ```
-/?activities=skifahren,wandern&climate=kalt,frostig&start=2026-12-20&end=2026-12-27&travel=auto&destination=eu_schengen&gender=divers
+/?activities=base,skifahren,wandern&climate=kalt,frostig&start=2026-12-20&end=2026-12-27&travel=auto&destination=eu_schengen&gender=divers
 ```
 
 opens straight into that trip already set up — useful for sharing a
@@ -417,31 +444,40 @@ travel, …) exactly as `localStorage`/the default would have set it.
 
 | Param | Maps to | Format |
 | --- | --- | --- |
-| `activities` | `presetIds` | comma-separated preset ids (`skifahren`, `wandern`, `sommerlager`, `camping`, `segeln`, `motorrad`) |
-| `climate` | `vars.climate` | comma-separated (`warm`, `mild`, `kalt`, `frostig`) |
+| `activities` | `presetIds` | comma-separated preset ids, including `base` (`base`, `skifahren`, `wandern`, `sommerlager`, `camping`, `segeln`, `motorrad`) |
 | `start` | `startDate` | `JJJJ-MM-TT` |
 | `end` | `endDate` | `JJJJ-MM-TT` |
-| `travel` | `vars.travel` | `auto` \| `bahn` \| `flugzeug` |
-| `destination` | `vars.destination` | `inland` \| `eu_schengen` \| `international` |
-| `gender` | `vars.gender` | `divers` \| `maennlich` \| `weiblich` |
+| *(any claimed variable's id)* | `vars.<id>` | comma-separated for a `multi` variable (`climate`: `warm`\|`mild`\|`kalt`\|`frostig`); a single value for a single-select one (`travel`: `auto`\|`bahn`\|`flugzeug`; `destination`: `inland`\|`eu_schengen`\|`international`; `gender`: `divers`\|`maennlich`\|`weiblich`; or any preset-specific variable, e.g. Sommerlager's `rolle`: `kind`\|`leiter`) |
+
+A claimed variable's query param name is just its id — `climate`, `travel`,
+`destination`, and `gender` aren't hardcoded specially in
+`tripSelectionFromQuery()`/`tripSelectionToQueryString()`; both walk
+`allClaimedVariables()` (every variable any registered preset declares,
+deduped by id) generically, so a newly claimed or newly added variable
+round-trips through the URL automatically, no query-param code to update.
 
 A few deliberate edge-case decisions in `tripSelectionFromQuery()`:
 
-- **`activities`/`climate` are arrays, so an explicit empty value
-  (`?activities=`) is a valid override on its own** — "select none of
-  these", the same "keine Angabe" meaning an empty array already has
-  everywhere else in the app, not "ignore this param since it's empty."
-  Unknown entries in a comma list (a typo'd preset id, an invalid climate
-  value) are dropped individually rather than invalidating the whole list.
-- **`travel`/`destination`/`gender` are single-select, so there's no
-  plain-empty-array-vs-absent distinction to make** — a present-but-
-  unrecognized value (including an empty string, `?travel=`) is treated the
-  same as an explicit "keine Angabe" (`vars.travel: []`) instead of being
-  silently ignored, matching how the rest of the schema already treats an
-  unset value as meaningful, not missing. `applyQueryOverrides()` merges
-  `vars` one level deep (`{ ...base.vars, ...overrides.vars }`), so a link
-  overriding just `climate` doesn't clobber another stored variable value
-  the URL never mentioned.
+- **`activities` is an array, so an explicit empty value (`?activities=`)
+  is a valid override on its own** — "select none of these", the same
+  "keine Angabe" meaning an empty array already has everywhere else in the
+  app, not "ignore this param since it's empty." Unknown entries in a comma
+  list (a typo'd preset id) are dropped individually rather than
+  invalidating the whole list.
+- **A `multi` variable's param (e.g. `climate`) behaves the same way**:
+  unrecognized values in the comma list are dropped individually, and an
+  explicit empty value is a valid "none selected" override.
+- **A single-select variable's param (e.g. `travel`, `destination`,
+  `gender`) has no plain-empty-array-vs-absent distinction to make** — a
+  present-but-unrecognized value (including an empty string, `?travel=`) is
+  treated as an explicit "keine Angabe" (`[]`) if the variable allows that
+  (`allowUnset`); otherwise (a variable that must always have a concrete
+  value, like Sommerlager's "Rolle") an invalid value is ignored and the
+  stored/default value applies instead, since there's no "unset" state to
+  fall back to. `applyQueryOverrides()` merges `vars` one level deep
+  (`{ ...currentSelection.vars, ...overrides.vars }`), so a link overriding
+  just `climate` doesn't clobber another stored variable value the URL
+  never mentioned.
 - **A `start`/`end` pair where the end lands before the start** is the one
   case query overrides can produce a genuinely invalid `TripSelection`
   (every other field is validated field-by-field, so nothing else can make
@@ -450,8 +486,22 @@ A few deliberate edge-case decisions in `tripSelectionFromQuery()`:
   (logging a `console.warn`), keeping whatever other overrides were valid —
   a malformed link degrades gracefully instead of failing to load at all.
 
-This only reads from the URL on initial load; the app doesn't rewrite the
-URL as the user changes the form afterward.
+### Keeping the URL in sync
+
+The URL isn't just read once on load — `PackingApp.vue` watches
+`tripSelection` (the same `watch` that persists to `localStorage`) and, on
+every change, calls `tripSelectionToQueryString()`
+(`src/lib/queryParams.ts` — the inverse of `tripSelectionFromQuery()`,
+serializing the full current selection back into the same query-string
+format) and writes it via `window.history.replaceState()`. `replaceState`,
+not `pushState`: toggling a preset, dragging a date, or flipping a variable
+shouldn't each add a browser-history entry the back button then has to
+click through — the current trip is meant to always be *this* URL, not a
+trail of them. Because the whole selection is serialized every time (not
+just whatever the user last touched), copying the address bar at any point
+is guaranteed to reproduce the exact trip currently shown, including
+variables with no visible control right now (e.g. `vars.rolle` if
+Sommerlager isn't selected) and `base` if it's been unchecked.
 
 ## Preset inspector
 

@@ -63,3 +63,14 @@ export const GENDER_VARIABLE: PresetVariable = {
   ],
   default: [],
 };
+
+/**
+ * Ids of the variables above — used by `ParameterForm.vue` (via a prop, to
+ * keep the component itself decoupled from any specific preset module) to
+ * render whichever of these are currently claimed by an active preset in
+ * their own top-level fields, instead of grouped under a preset's name like
+ * a genuinely preset-specific variable (e.g. Sommerlager's "Rolle").
+ */
+export const SHARED_VARIABLE_IDS: string[] = [CLIMATE_VARIABLE, TRAVEL_VARIABLE, DESTINATION_VARIABLE, GENDER_VARIABLE].map(
+  (variable) => variable.id,
+);

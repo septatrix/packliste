@@ -3,17 +3,23 @@ import { computed } from 'vue';
 import { daysBetweenInclusive } from '../lib/dates';
 import type { PresetVariable, TripSelection } from '../lib/schema';
 
+type PresetOption = { id: string; name: string; description?: string; variables?: PresetVariable[] };
+
 const props = defineProps<{
   modelValue: TripSelection;
-  presetOptions: { id: string; name: string; description?: string; variables?: PresetVariable[] }[];
-  /** `base`'s claimed variables (climate, travel, destination, gender, …) — base is always active, so these render unconditionally, same as before they were variables at all. */
-  baseVariables?: PresetVariable[];
+  /** `base` — rendered as its own toggle, separate from the activity group, since it's not an "activity" but is (like any of them) just an entry in `presetIds` the user can check/uncheck. Selected by default (see `PackingApp.vue`). */
+  baseOption: PresetOption;
+  activityOptions: PresetOption[];
+  /** Ids of variables that render in their own top-level field (see `presets/sharedVariables.ts`) rather than grouped under whichever preset claims them, e.g. climate/travel/destination/gender. Shown whenever any currently active preset (base or an activity) claims them — not shown at all if none do. */
+  globalVariableIds?: string[];
 }>();
 const emit = defineEmits<{ 'update:modelValue': [value: TripSelection] }>();
 
-// Activities are multi-select — a trip can combine several (e.g. Skifahren
-// *and* Sommerlager), so this toggles a value in/out of an array instead of
-// picking a single one.
+const allOptions = computed(() => [props.baseOption, ...props.activityOptions]);
+
+// Every preset (base or activity) is toggled the same way — a trip can
+// combine several activities (e.g. Skifahren *and* Sommerlager) and base is
+// no different, just usually on by default.
 function togglePresetId(id: string) {
   const current = props.modelValue.presetIds;
   const next = current.includes(id) ? current.filter((existing) => existing !== id) : [...current, id];
@@ -21,7 +27,7 @@ function togglePresetId(id: string) {
 }
 
 const selectedDescriptions = computed(() =>
-  props.presetOptions.filter((preset) => props.modelValue.presetIds.includes(preset.id)).map((preset) => preset.description),
+  props.activityOptions.filter((preset) => props.modelValue.presetIds.includes(preset.id)).map((preset) => preset.description),
 );
 
 // Every claimed variable (see PresetVariable) is stored flat by id in
@@ -52,18 +58,34 @@ function setSingleVar(variable: PresetVariable, value: string) {
   setVar(variable.id, value === '' ? [] : [value]);
 }
 
-// `base`'s claimed variables (climate, travel, destination, gender, …)
-// always render — base is always active — in their own top-level fields.
-const globalVariables = computed(() => props.baseVariables ?? []);
-const globalVariableIds = computed(() => new Set(globalVariables.value.map((variable) => variable.id)));
+const globalVariableIdSet = computed(() => new Set(props.globalVariableIds ?? []));
 
-// Every *other* variable a currently selected preset claims (e.g.
+// Every variable claimed by any *currently active* preset (base or an
+// activity), deduped by id — since base can now be unchecked, a variable it
+// claims (e.g. climate) only shows if base is active or some other active
+// preset claims it too, not unconditionally.
+const activeVariablesById = computed(() => {
+  const map = new Map<string, PresetVariable>();
+  for (const option of allOptions.value) {
+    if (!props.modelValue.presetIds.includes(option.id)) continue;
+    for (const variable of option.variables ?? []) {
+      if (!map.has(variable.id)) map.set(variable.id, variable);
+    }
+  }
+  return map;
+});
+
+const globalVariables = computed(() =>
+  [...activeVariablesById.value.values()].filter((variable) => globalVariableIdSet.value.has(variable.id)),
+);
+
+// Every *other* variable a currently selected activity preset claims (e.g.
 // Sommerlager's "Rolle") — variables already covered by `globalVariables`
 // are excluded here so they don't render twice. Only shown while the
 // claiming preset is actually selected.
 const presetsWithVariables = computed(() =>
-  props.presetOptions
-    .map((preset) => ({ ...preset, variables: (preset.variables ?? []).filter((variable) => !globalVariableIds.value.has(variable.id)) }))
+  props.activityOptions
+    .map((preset) => ({ ...preset, variables: (preset.variables ?? []).filter((variable) => !globalVariableIdSet.value.has(variable.id)) }))
     .filter((preset) => props.modelValue.presetIds.includes(preset.id) && preset.variables.length > 0),
 );
 
@@ -89,10 +111,28 @@ function setEndDate(value: string) {
 <template>
   <form class="parameter-form" @submit.prevent>
     <div class="field field-wide">
+      <span class="field-label">Basis</span>
+      <div class="toggle-group" role="group" aria-label="Basis-Packliste ein-/ausschließen">
+        <label class="toggle-chip" :class="{ active: modelValue.presetIds.includes(baseOption.id) }">
+          <input
+            type="checkbox"
+            class="toggle-chip-input"
+            :checked="modelValue.presetIds.includes(baseOption.id)"
+            @change="togglePresetId(baseOption.id)"
+          />
+          {{ baseOption.name }}
+        </label>
+      </div>
+      <p v-if="modelValue.presetIds.includes(baseOption.id) && baseOption.description" class="field-hint">
+        {{ baseOption.description }}
+      </p>
+    </div>
+
+    <div class="field field-wide">
       <span class="field-label">Aktivität (mehrere möglich)</span>
       <div class="toggle-group" role="group" aria-label="Aktivität auswählen">
         <label
-          v-for="preset in presetOptions"
+          v-for="preset in activityOptions"
           :key="preset.id"
           class="toggle-chip"
           :class="{ active: modelValue.presetIds.includes(preset.id) }"

@@ -157,21 +157,32 @@ const collisionProfiles: { days: number; vars: Record<string, string[]> }[] = [
 const activityPresetCombos: PresetDefinition[][] = nonEmptySubsets(activityPresets);
 let mergeChecks = 0;
 
+// `base` can now be unchecked in the UI (it's just another entry in
+// `presetIds`, not forced in), so every profile/subset is also exercised
+// without it — a combination that used to be structurally impossible.
 for (const presets of activityPresetCombos) {
   for (const profile of collisionProfiles) {
-    mergeChecks += 1;
-    const presetIds = presets.map((p) => p.id);
-    const params: Params = { presetIds, days: profile.days };
-    try {
-      resolveList(params, [base, ...presets], profile.vars);
-    } catch (err) {
-      errorCount += 1;
-      console.error(`resolveList() warf einen Fehler für Presets [${presetIds.join(', ')}] (params=${JSON.stringify(params)}):`, err);
+    for (const withBase of [true, false]) {
+      mergeChecks += 1;
+      const presetList = withBase ? [base, ...presets] : presets;
+      const presetIds = presetList.map((p) => p.id);
+      const params: Params = { presetIds, days: profile.days };
+      try {
+        resolveList(params, presetList, profile.vars);
+      } catch (err) {
+        errorCount += 1;
+        console.error(`resolveList() warf einen Fehler für Presets [${presetIds.join(', ')}] (params=${JSON.stringify(params)}):`, err);
+      }
     }
 
     // Also exercise every combination of each included preset's own
     // variables (e.g. Sommerlager's "Rolle") — resolveList()'s merge and
-    // cross-preset exclusion (excludeItemIds) both depend on them.
+    // cross-preset exclusion (excludeItemIds) both depend on them. Kept to
+    // the `base`-included case: these combos are about a preset's own
+    // variables, not about `base`'s presence, so doubling this inner loop
+    // too would just be redundant work.
+    const presetIds = presets.map((p) => p.id);
+    const params: Params = { presetIds: [base.id, ...presetIds], days: profile.days };
     for (const preset of presets) {
       const varCombos = variableCombos(preset.variables ?? []);
       if (varCombos.length <= 1) continue;
