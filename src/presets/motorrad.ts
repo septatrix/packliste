@@ -1,12 +1,15 @@
 import type { Item, PresetDefinition } from '../lib/schema';
 import { perDay, perDayNote } from './helpers';
+import { CLIMATE_VARIABLE, DESTINATION_VARIABLE } from './sharedVariables';
 
 const motorrad: PresetDefinition = {
   id: 'motorrad',
   name: 'Motorradtour',
   description: 'Schutzkleidung und Ausrüstung für eine Motorradtour.',
 
-  resolveItems(params): Item[] {
+  variables: [CLIMATE_VARIABLE, DESTINATION_VARIABLE],
+
+  resolveItems(params, vars): Item[] {
     const items: Item[] = [
       { id: 'motorrad-helm', name: 'Motorradhelm', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🪖' },
       { id: 'motorrad-jacke', name: 'Motorradjacke mit Protektoren', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧥' },
@@ -46,7 +49,8 @@ const motorrad: PresetDefinition = {
 
     // Grüne Versicherungskarte sowie Warnweste & Warndreieck sind in vielen
     // Ländern außerhalb des Heimatlands gesetzlich vorgeschrieben.
-    if (params.destination !== undefined && params.destination !== 'inland') {
+    const destination = vars.destination?.[0];
+    if (destination !== undefined && destination !== 'inland') {
       items.push(
         {
           // Kein `quantity`: Man führt eine gültige Versicherungskarte mit,
@@ -68,7 +72,7 @@ const motorrad: PresetDefinition = {
       );
     }
 
-    if (params.climate.includes('frostig')) {
+    if (vars.climate?.includes('frostig')) {
       items.push({
         id: 'motorrad-beheizte-inlays',
         name: 'Beheizbare Handschuh-Inlays',
@@ -79,7 +83,7 @@ const motorrad: PresetDefinition = {
       });
     }
 
-    if (params.climate.includes('warm')) {
+    if (vars.climate?.includes('warm')) {
       items.push({
         id: 'motorrad-kuehlweste',
         name: 'Kühlweste / Nierengurt',

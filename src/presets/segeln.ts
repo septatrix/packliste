@@ -1,13 +1,16 @@
 import type { Item, PresetDefinition } from '../lib/schema';
 import { perDay, perDayNote } from './helpers';
+import { CLIMATE_VARIABLE } from './sharedVariables';
 
 const segeln: PresetDefinition = {
   id: 'segeln',
   name: 'Segeln',
   description: 'Ausrüstung für einen Segeltörn.',
 
-  resolveItems(params): Item[] {
-    const coldClimate = params.climate.includes('kalt') || params.climate.includes('frostig');
+  variables: [CLIMATE_VARIABLE],
+
+  resolveItems(params, vars): Item[] {
+    const coldClimate = vars.climate?.includes('kalt') || vars.climate?.includes('frostig');
 
     const items: Item[] = [
       { id: 'segeln-rettungsweste', name: 'Rettungsweste', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🦺' },
@@ -49,7 +52,7 @@ const segeln: PresetDefinition = {
       { id: 'segeln-bordpapiere', name: 'Bootsführerschein / Bordpapiere', category: 'Dokumente', importance: 'optional', icon: '🪪' },
     ];
 
-    if (params.climate.includes('warm')) {
+    if (vars.climate?.includes('warm')) {
       items.push(
         { id: 'shared-sonnencreme', name: 'Wasserfeste Sonnencreme', category: 'Hygiene', importance: 'pflicht', quantity: 1, icon: '☀️' },
         { id: 'segeln-sonnenhut', name: 'Sonnenhut / Cap mit Kordel', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧢' },

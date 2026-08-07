@@ -1,12 +1,15 @@
 import type { Item, PresetDefinition } from '../lib/schema';
 import { perDay, perDayNote, rangeNote } from './helpers';
+import { CLIMATE_VARIABLE } from './sharedVariables';
 
 const skifahren: PresetDefinition = {
   id: 'skifahren',
   name: 'Skifahren',
   description: 'Ausrüstung und Kleidung für einen Skiurlaub.',
 
-  resolveItems(params): Item[] {
+  variables: [CLIMATE_VARIABLE],
+
+  resolveItems(params, vars): Item[] {
     const items: Item[] = [
       { id: 'ski-jacke', name: 'Skijacke', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧥' },
       { id: 'ski-hose', name: 'Skihose', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '👖' },
@@ -81,7 +84,7 @@ const skifahren: PresetDefinition = {
       });
     }
 
-    if (params.climate.includes('frostig')) {
+    if (vars.climate?.includes('frostig')) {
       items.push({
         id: 'ski-handwaermer',
         name: 'Handwärmer (Einweg)',

@@ -1,7 +1,7 @@
 ---
 import { codeToHtml } from 'shiki';
 import PackingApp from '../components/PackingApp.vue';
-import { activityPresets, base } from '../presets';
+import { allPresets } from '../presets';
 import '../styles/global.css';
 
 // Raw source of every preset module, keyed by file path, for the
@@ -19,7 +19,6 @@ function sourceForPresetId(id: string): string {
   return entry?.[1] ?? '';
 }
 
-const allPresets = [base, ...activityPresets];
 const presetCode = await Promise.all(
   allPresets.map(async (preset) => ({
     id: preset.id,

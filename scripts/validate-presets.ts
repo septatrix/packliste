@@ -26,7 +26,7 @@
  *      parameter values, only on which conditional branches are active).
  */
 import { z } from 'zod';
-import { ItemSchema, ParamsSchema, type Climate, type Params, type PresetDefinition } from '../src/lib/schema';
+import { ItemSchema, ParamsSchema, type Params, type PresetDefinition, type PresetVariable } from '../src/lib/schema';
 import { resolveList } from '../src/lib/engine';
 import { base, activityPresets } from '../src/presets';
 
@@ -42,11 +42,20 @@ function allSubsets<T>(items: T[]): T[][] {
   return [[], ...nonEmptySubsets(items)];
 }
 
-/** Every combination of a preset's own variables (e.g. Sommerlager's "Rolle"), fully specified — `[{}]` if it has none. */
-function presetVariableCombos(preset: PresetDefinition): Record<string, string>[] {
-  const variables = preset.variables ?? [];
-  return variables.reduce<Record<string, string>[]>(
-    (combos, variable) => combos.flatMap((combo) => variable.options.map((option) => ({ ...combo, [variable.id]: option.value }))),
+/** Every representative value a single claimed variable can take, e.g. `[]`/`['warm']`/`['warm','mild']`/… for a multi-select, or `[]`/`['auto']`/`['bahn']`/… for an optional single-select. */
+function variableValueOptions(variable: PresetVariable): string[][] {
+  if (variable.multi) return allSubsets(variable.options.map((option) => option.value));
+  const singles = variable.options.map((option) => [option.value]);
+  return variable.allowUnset ? [...singles, []] : singles;
+}
+
+/** Every combination of a set of claimed variables (deduped by id — two presets claiming the same variable share one axis, not two), fully specified — `[{}]` if there are none. */
+function variableCombos(variables: PresetVariable[]): Record<string, string[]>[] {
+  const byId = new Map<string, PresetVariable>();
+  for (const variable of variables) if (!byId.has(variable.id)) byId.set(variable.id, variable);
+
+  return [...byId.values()].reduce<Record<string, string[]>[]>(
+    (combos, variable) => combos.flatMap((combo) => variableValueOptions(variable).map((value) => ({ ...combo, [variable.id]: value }))),
     [{}],
   );
 }
@@ -58,7 +67,7 @@ let errorCount = 0;
 // used for the naming-convention check after Pass 1.
 const idsByPreset = new Map<string, Set<string>>();
 
-function recordAndValidate(preset: PresetDefinition, params: Params, vars: Record<string, string>, contextLabel: string): void {
+function recordAndValidate(preset: PresetDefinition, params: Params, vars: Record<string, string[]>, contextLabel: string): void {
   let rawItems: unknown;
   try {
     rawItems = preset.resolveItems(params, vars);
@@ -85,38 +94,30 @@ function recordAndValidate(preset: PresetDefinition, params: Params, vars: Recor
 
 // --- Pass 1: full parameter matrix, one activity preset (+ base) at a time ---
 
-const climateCombos: Climate[][] = allSubsets(['warm', 'mild', 'kalt', 'frostig']);
-const travels: Params['travel'][] = ['auto', 'bahn', 'flugzeug', undefined];
-const destinations: Params['destination'][] = ['inland', 'eu_schengen', 'international', undefined];
-const genders: Params['gender'][] = ['divers', 'maennlich', 'weiblich', undefined];
 const dayCounts = [1, 3, 7, 14];
 
 let matrixCombinations = 0;
 
 for (const preset of activityPresets) {
-  const varCombos = presetVariableCombos(preset);
-  for (const climate of climateCombos) {
-    for (const travel of travels) {
-      for (const destination of destinations) {
-        for (const gender of genders) {
-          for (const days of dayCounts) {
-            for (const vars of varCombos) {
-              matrixCombinations += 1;
-              const candidate: Params = { presetIds: [preset.id], climate, travel, destination, gender, days };
-              const parsedParams = ParamsSchema.safeParse(candidate);
-              if (!parsedParams.success) {
-                errorCount += 1;
-                console.error(`Ungültige Test-Parameter für "${preset.id}":`, parsedParams.error.message);
-                continue;
-              }
-              const params = parsedParams.data;
-              const contextLabel = `params=${JSON.stringify(params)}, vars=${JSON.stringify(vars)}`;
-              recordAndValidate(base, params, {}, contextLabel);
-              recordAndValidate(preset, params, vars, contextLabel);
-            }
-          }
-        }
+  // Every variable either `base` or this preset claims (deduped by id) —
+  // covers climate/travel/destination/gender plus any preset-specific
+  // variable like Sommerlager's "Rolle".
+  const varCombos = variableCombos([...(base.variables ?? []), ...(preset.variables ?? [])]);
+
+  for (const vars of varCombos) {
+    for (const days of dayCounts) {
+      matrixCombinations += 1;
+      const candidate: Params = { presetIds: [preset.id], days };
+      const parsedParams = ParamsSchema.safeParse(candidate);
+      if (!parsedParams.success) {
+        errorCount += 1;
+        console.error(`Ungültige Test-Parameter für "${preset.id}":`, parsedParams.error.message);
+        continue;
       }
+      const params = parsedParams.data;
+      const contextLabel = `params=${JSON.stringify(params)}, vars=${JSON.stringify(vars)}`;
+      recordAndValidate(base, params, vars, contextLabel);
+      recordAndValidate(preset, params, vars, contextLabel);
     }
   }
 }
@@ -146,38 +147,49 @@ for (const [presetId, ids] of idsByPreset) {
 
 // --- Pass 3: exercise resolveList()'s merge path across preset subsets ---
 
-const collisionProfiles: Params[] = [
-  { presetIds: [], climate: ['warm', 'mild', 'kalt', 'frostig'], travel: 'flugzeug', destination: 'international', gender: undefined, days: 14 },
-  { presetIds: [], climate: ['warm', 'mild', 'kalt', 'frostig'], travel: 'flugzeug', destination: 'international', gender: 'maennlich', days: 14 },
-  { presetIds: [], climate: ['warm', 'mild', 'kalt', 'frostig'], travel: 'flugzeug', destination: 'international', gender: 'weiblich', days: 14 },
-  { presetIds: [], climate: [], travel: undefined, destination: undefined, gender: undefined, days: 1 },
+const collisionProfiles: { days: number; vars: Record<string, string[]> }[] = [
+  { days: 14, vars: { climate: ['warm', 'mild', 'kalt', 'frostig'], travel: ['flugzeug'], destination: ['international'], gender: [] } },
+  { days: 14, vars: { climate: ['warm', 'mild', 'kalt', 'frostig'], travel: ['flugzeug'], destination: ['international'], gender: ['maennlich'] } },
+  { days: 14, vars: { climate: ['warm', 'mild', 'kalt', 'frostig'], travel: ['flugzeug'], destination: ['international'], gender: ['weiblich'] } },
+  { days: 1, vars: { climate: [], travel: [], destination: [], gender: [] } },
 ];
 
 const activityPresetCombos: PresetDefinition[][] = nonEmptySubsets(activityPresets);
 let mergeChecks = 0;
 
+// `base` can now be unchecked in the UI (it's just another entry in
+// `presetIds`, not forced in), so every profile/subset is also exercised
+// without it — a combination that used to be structurally impossible.
 for (const presets of activityPresetCombos) {
   for (const profile of collisionProfiles) {
-    mergeChecks += 1;
-    const presetIds = presets.map((p) => p.id);
-    const params: Params = { ...profile, presetIds };
-    try {
-      resolveList(params, [base, ...presets]);
-    } catch (err) {
-      errorCount += 1;
-      console.error(`resolveList() warf einen Fehler für Presets [${presetIds.join(', ')}] (params=${JSON.stringify(params)}):`, err);
+    for (const withBase of [true, false]) {
+      mergeChecks += 1;
+      const presetList = withBase ? [base, ...presets] : presets;
+      const presetIds = presetList.map((p) => p.id);
+      const params: Params = { presetIds, days: profile.days };
+      try {
+        resolveList(params, presetList, profile.vars);
+      } catch (err) {
+        errorCount += 1;
+        console.error(`resolveList() warf einen Fehler für Presets [${presetIds.join(', ')}] (params=${JSON.stringify(params)}):`, err);
+      }
     }
 
     // Also exercise every combination of each included preset's own
     // variables (e.g. Sommerlager's "Rolle") — resolveList()'s merge and
-    // cross-preset exclusion (excludeItemIds) both depend on them.
+    // cross-preset exclusion (excludeItemIds) both depend on them. Kept to
+    // the `base`-included case: these combos are about a preset's own
+    // variables, not about `base`'s presence, so doubling this inner loop
+    // too would just be redundant work.
+    const presetIds = presets.map((p) => p.id);
+    const params: Params = { presetIds: [base.id, ...presetIds], days: profile.days };
     for (const preset of presets) {
-      const varCombos = presetVariableCombos(preset);
+      const varCombos = variableCombos(preset.variables ?? []);
       if (varCombos.length <= 1) continue;
       for (const vars of varCombos) {
         mergeChecks += 1;
         try {
-          resolveList(params, [base, ...presets], { [preset.id]: vars });
+          resolveList(params, [base, ...presets], { ...profile.vars, ...vars });
         } catch (err) {
           errorCount += 1;
           console.error(
