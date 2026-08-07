@@ -1,5 +1,6 @@
 import type { Item, PresetDefinition } from '../lib/schema';
 import { matchesGender, perDay, perDayNote, rangeNote } from './helpers';
+import { CLIMATE_VARIABLE, GENDER_VARIABLE } from './sharedVariables';
 
 /**
  * Modeled on a real two-week "Kofferliste" for a Catholic youth-group
@@ -19,6 +20,8 @@ const sommerlager: PresetDefinition = {
   description: 'Packliste für ein mehrtägiges Sommer-/Zeltlager.',
 
   variables: [
+    CLIMATE_VARIABLE,
+    GENDER_VARIABLE,
     {
       id: 'rolle',
       label: 'Rolle',
@@ -26,7 +29,7 @@ const sommerlager: PresetDefinition = {
         { value: ROLLE_KIND, label: 'Kind / Teilnehmer:in' },
         { value: ROLLE_LEITER, label: 'Leiter:in' },
       ],
-      default: ROLLE_KIND,
+      default: [ROLLE_KIND],
     },
   ],
 
@@ -139,7 +142,7 @@ const sommerlager: PresetDefinition = {
     // Ohne Geschlechtsangabe zeigen wir beide Varianten (Jungen + Mädchen),
     // damit nichts Relevantes fehlt — bei "divers" hingegen bewusst keine
     // der beiden zusätzlichen Varianten.
-    if (matchesGender(params.gender, 'maennlich')) {
+    if (matchesGender(vars.gender, 'maennlich')) {
       items.push(
         { id: 'shared-isomatte', name: 'Isomatte', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🏕️' },
         { id: 'lager-luftmatratze', name: 'Luftmatratze mit Pumpe', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🏕️' },
@@ -148,7 +151,7 @@ const sommerlager: PresetDefinition = {
     }
 
     // Nachtzeug Mädchen: feste Betten, daher Bettwäsche statt Isomatte.
-    if (matchesGender(params.gender, 'weiblich')) {
+    if (matchesGender(vars.gender, 'weiblich')) {
       items.push(
         { id: 'lager-bettwaesche', name: 'Bettwäsche (falls kein Schlafsack)', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🛏️' },
         { id: 'lager-hausschuhe', name: 'Hausschuhe', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🥿' },
@@ -156,7 +159,7 @@ const sommerlager: PresetDefinition = {
     }
 
     // Extra warme Schicht bei kaltem/frostigem Wetter, zusätzlich zum Standard-Pullover.
-    if (params.climate.includes('kalt') || params.climate.includes('frostig')) {
+    if (vars.climate?.includes('kalt') || vars.climate?.includes('frostig')) {
       items.push({
         id: 'lager-extra-pulli',
         name: 'Zusätzlicher warmer Pullover',
@@ -181,7 +184,7 @@ const sommerlager: PresetDefinition = {
 
     // Leiter:innen essen aus der Gemeinschaftsküche und bringen kein eigenes
     // Geschirr mit — nur Teilnehmer:innen brauchen ihren eigenen Teller.
-    if (vars.rolle !== ROLLE_LEITER) {
+    if (vars.rolle?.[0] !== ROLLE_LEITER) {
       items.push({
         id: 'lager-teller',
         name: 'Teller (tief & flach, Plastik)',
@@ -200,7 +203,7 @@ const sommerlager: PresetDefinition = {
   // dabeihaben — entfernt das Basis-Preset-Item unabhängig davon, dass es
   // dort (immer) hinzugefügt wird.
   excludeItemIds(_params, vars): string[] {
-    return vars.rolle === ROLLE_KIND ? ['base-handy'] : [];
+    return vars.rolle?.[0] === ROLLE_KIND ? ['base-handy'] : [];
   },
 };
 

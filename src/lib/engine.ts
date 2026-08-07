@@ -56,15 +56,23 @@ function formatQuantity(quantity: Quantity): { label: string; min: number; max: 
 }
 
 /**
- * A preset's own variable values (see PresetVariable), defaulted from
- * `preset.variables` and overridden by whatever the user picked in
- * `presetVarValues[preset.id]` — so `resolveItems`/`excludeItemIds` always
- * see a complete map, even before the user has touched the form (or for a
- * trip selection saved before this variable existed).
+ * Every claimed variable's value (see PresetVariable), defaulted from every
+ * active preset's `variables` and overridden by whatever the user picked
+ * (`varValues`, keyed by variable id — see `TripSelection.vars`) — so
+ * `resolveItems`/`excludeItemIds` always see a complete map, even before the
+ * user has touched the form (or for a trip selection saved before a variable
+ * existed). Computed once per `resolveList()` call and passed unchanged to
+ * every preset: two presets claiming the same id (e.g. "climate") are meant
+ * to see the same value, not independent copies.
  */
-function resolveVars(preset: PresetDefinition, presetVarValues: Record<string, Record<string, string>>): Record<string, string> {
-  const defaults = Object.fromEntries((preset.variables ?? []).map((variable) => [variable.id, variable.default]));
-  return { ...defaults, ...presetVarValues[preset.id] };
+function resolveVars(presets: PresetDefinition[], varValues: Record<string, string[]>): Record<string, string[]> {
+  const defaults: Record<string, string[]> = {};
+  for (const preset of presets) {
+    for (const variable of preset.variables ?? []) {
+      if (!(variable.id in defaults)) defaults[variable.id] = variable.default;
+    }
+  }
+  return { ...defaults, ...varValues };
 }
 
 /**
@@ -88,22 +96,23 @@ function resolveVars(preset: PresetDefinition, presetVarValues: Record<string, R
  * is a different situation — always an authoring mistake, never
  * intentional — and still throws.
  *
- * `presetVarValues` holds the user's choice for each preset's own variables
- * (see PresetVariable), keyed by preset id then variable id — e.g.
- * Sommerlager's "Rolle" (Kind/Leiter:in). It's passed to every preset's
+ * `varValues` holds the user's choice for every claimed variable (see
+ * PresetVariable), keyed by variable id — e.g. climate, or Sommerlager's
+ * "Rolle" (Kind/Leiter:in). It's passed to every preset's
  * `resolveItems`/`excludeItemIds` already defaulted, see `resolveVars`.
  */
 export function resolveList(
   params: Params,
   presets: PresetDefinition[],
-  presetVarValues: Record<string, Record<string, string>> = {},
+  varValues: Record<string, string[]> = {},
 ): ResolvedCategory[] {
   const merged = new Map<string, ResolvedItem>();
+  const vars = resolveVars(presets, varValues);
 
   for (const preset of presets) {
     let rawItems: unknown;
     try {
-      rawItems = preset.resolveItems(params, resolveVars(preset, presetVarValues));
+      rawItems = preset.resolveItems(params, vars);
     } catch (err) {
       throw new Error(`Preset "${preset.id}" warf einen Fehler in resolveItems(): ${String(err)}`);
     }
@@ -167,7 +176,7 @@ export function resolveList(
   // it — e.g. Sommerlager removing "Smartphone" for children.
   for (const preset of presets) {
     if (!preset.excludeItemIds) continue;
-    for (const id of preset.excludeItemIds(params, resolveVars(preset, presetVarValues))) {
+    for (const id of preset.excludeItemIds(params, vars)) {
       merged.delete(id);
     }
   }

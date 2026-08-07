@@ -1,16 +1,21 @@
 import type { Item, PresetDefinition } from '../lib/schema';
 import { matchesGender, perDay, perDayNote, rangeNote } from './helpers';
+import { CLIMATE_VARIABLE, DESTINATION_VARIABLE, GENDER_VARIABLE, TRAVEL_VARIABLE } from './sharedVariables';
 
 /**
  * Universelle Essentials, die unabhängig vom gewählten Aktivitäts-Preset
- * immer mit in die Liste einfließen (siehe src/presets/index.ts).
+ * immer mit in die Liste einfließen (siehe src/presets/index.ts). `base` is
+ * always active, so claiming these four here is what keeps them always
+ * shown in the form, same as when they were bespoke `Params` fields.
  */
 const base: PresetDefinition = {
   id: 'base',
   name: 'Basis',
   description: 'Essentials, die auf (fast) jeder Reise dabei sein sollten.',
 
-  resolveItems(params): Item[] {
+  variables: [CLIMATE_VARIABLE, TRAVEL_VARIABLE, DESTINATION_VARIABLE, GENDER_VARIABLE],
+
+  resolveItems(params, vars): Item[] {
     const items: Item[] = [
       // Keine `quantity` bei Dingen, von denen man ohnehin nur eines besitzt —
       // ein Zähler ergibt hier keinen Sinn.
@@ -51,9 +56,11 @@ const base: PresetDefinition = {
       },
     ];
 
+    const destination = vars.destination?.[0];
+
     // Reisepass & Co. nur außerhalb des Heimatlands nötig. Ohne Angabe des
     // Reiseziels nehmen wir nichts davon in die Liste auf (statt zu raten).
-    if (params.destination !== undefined && params.destination !== 'inland') {
+    if (destination !== undefined && destination !== 'inland') {
       items.push(
         { id: 'base-reisepass', name: 'Reisepass', category: 'Dokumente', importance: 'pflicht', icon: '🛂' },
         {
@@ -67,7 +74,7 @@ const base: PresetDefinition = {
     }
 
     // Visum, Adapter und Fremdwährung nur außerhalb der EU/Schengen-Zone.
-    if (params.destination === 'international') {
+    if (destination === 'international') {
       items.push(
         {
           id: 'base-visum',
@@ -87,7 +94,7 @@ const base: PresetDefinition = {
       );
     }
 
-    if (params.travel === 'flugzeug') {
+    if (vars.travel?.[0] === 'flugzeug') {
       items.push({
         id: 'base-fluessigkeiten',
         name: 'Flüssigkeiten im Handgepäck (Behälter ≤ 100 ml)',
@@ -101,7 +108,7 @@ const base: PresetDefinition = {
     // Geteilte Item-ID: eine spezifischere Sonnencreme-Empfehlung aus einem
     // Aktivitäts-Preset (z. B. Skifahren, Segeln) überschreibt diese
     // generische, statt als zweiter Eintrag daneben zu stehen.
-    if (params.climate.includes('warm') || params.climate.includes('frostig')) {
+    if (vars.climate?.includes('warm') || vars.climate?.includes('frostig')) {
       items.push({
         id: 'shared-sonnencreme',
         name: 'Sonnencreme',
@@ -112,7 +119,7 @@ const base: PresetDefinition = {
       });
     }
 
-    if (matchesGender(params.gender, 'weiblich')) {
+    if (matchesGender(vars.gender, 'weiblich')) {
       items.push({
         id: 'base-hygieneartikel',
         name: 'Hygieneartikel (Periodenprodukte)',

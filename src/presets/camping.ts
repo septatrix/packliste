@@ -1,12 +1,15 @@
 import type { Item, PresetDefinition } from '../lib/schema';
 import { perDay, perDayNote, rangeNote } from './helpers';
+import { CLIMATE_VARIABLE } from './sharedVariables';
 
 const camping: PresetDefinition = {
   id: 'camping',
   name: 'Camping',
   description: 'Ausrüstung für einen Campingurlaub mit Zelt.',
 
-  resolveItems(params): Item[] {
+  variables: [CLIMATE_VARIABLE],
+
+  resolveItems(params, vars): Item[] {
     const items: Item[] = [
       // Geteilte Item-IDs (shared-*): dasselbe Ausrüstungsstück wird auch
       // von Wandern/Sommerlager vorgeschlagen — eine Reise mit mehreren
@@ -65,14 +68,14 @@ const camping: PresetDefinition = {
       },
     ];
 
-    if (params.climate.includes('warm')) {
+    if (vars.climate?.includes('warm')) {
       items.push(
         { id: 'shared-insektenschutz', name: 'Mückenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
         { id: 'camping-sonnensegel', name: 'Sonnensegel / Zeltvordach-Beschattung', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '⛱️' },
       );
     }
 
-    if (params.climate.includes('kalt') || params.climate.includes('frostig')) {
+    if (vars.climate?.includes('kalt') || vars.climate?.includes('frostig')) {
       items.push(
         { id: 'camping-inlett', name: 'Schlafsack-Inlett (zusätzliche Wärme)', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🌙' },
         { id: 'camping-warme-decke', name: 'Zusätzliche warme Decke', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🛏️' },

@@ -51,7 +51,7 @@ const selectedPresets = computed<PresetDefinition[]>(() =>
 // `base` is always merged in, even with zero activities selected — the
 // universal essentials don't depend on having picked an activity.
 const categories = computed(() =>
-  resolveList(deriveParams(tripSelection), [base, ...selectedPresets.value], tripSelection.presetVars),
+  resolveList(deriveParams(tripSelection), [base, ...selectedPresets.value], tripSelection.vars),
 );
 
 const allItems = computed<ResolvedItem[]>(() => categories.value.flatMap((c) => c.items));
@@ -85,7 +85,12 @@ function onAmountChange(itemId: string, amount: number) {
       </div>
     </header>
 
-    <ParameterForm :model-value="tripSelection" :preset-options="presetOptions" @update:model-value="onSelectionUpdate" />
+    <ParameterForm
+      :model-value="tripSelection"
+      :preset-options="presetOptions"
+      :base-variables="base.variables"
+      @update:model-value="onSelectionUpdate"
+    />
 
     <p v-if="selectedPresets.length === 0" class="hint">
       Noch keine Aktivität ausgewählt — hier ist schon mal die Basis-Packliste. Wähle oben eine oder mehrere Aktivitäten

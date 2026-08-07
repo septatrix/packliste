@@ -1,12 +1,15 @@
 import type { Item, PresetDefinition } from '../lib/schema';
 import { perDay, perDayNote, rangeNote } from './helpers';
+import { CLIMATE_VARIABLE } from './sharedVariables';
 
 const wandern: PresetDefinition = {
   id: 'wandern',
   name: 'Wandern',
   description: 'Ausrüstung für Tages- und Mehrtageswanderungen.',
 
-  resolveItems(params): Item[] {
+  variables: [CLIMATE_VARIABLE],
+
+  resolveItems(params, vars): Item[] {
     const items: Item[] = [
       { id: 'wandern-schuhe', name: 'Wanderschuhe', category: 'Ausrüstung', importance: 'pflicht', quantity: 1, icon: '🥾' },
       // Geteilte Item-IDs (shared-*): dieselbe Ausrüstung wird auch von
@@ -48,14 +51,14 @@ const wandern: PresetDefinition = {
       { id: 'wandern-wanderstoecke', name: 'Wanderstöcke', category: 'Ausrüstung', importance: 'optional', quantity: 1, icon: '🦯' },
     ];
 
-    if (params.climate.includes('warm')) {
+    if (vars.climate?.includes('warm')) {
       items.push(
         { id: 'wandern-sonnenhut', name: 'Sonnenhut / Cap', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧢' },
         { id: 'shared-insektenschutz', name: 'Insektenschutz', category: 'Hygiene', importance: 'optional', quantity: 1, icon: '🦟' },
       );
     }
 
-    if (params.climate.includes('kalt') || params.climate.includes('frostig')) {
+    if (vars.climate?.includes('kalt') || vars.climate?.includes('frostig')) {
       items.push(
         { id: 'wandern-regenjacke', name: 'Wind- und Regenjacke', category: 'Kleidung', importance: 'pflicht', quantity: 1, icon: '🧥' },
         { id: 'wandern-handschuhe', name: 'Handschuhe', category: 'Kleidung', importance: 'optional', quantity: 1, icon: '🧤' },

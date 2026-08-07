@@ -55,21 +55,26 @@ interface PresetDefinition {
   id: string;
   name: string;
   description?: string;
-  resolveItems(params: Params): Item[];
+  variables?: PresetVariable[];
+  resolveItems(params: Params, vars: Record<string, string[]>): Item[];
 }
 ```
 
-`resolveItems` receives the chosen trip parameters (`climate`, `days`,
-`travel`, `destination`, `gender`, `presetIds`, …) and returns the list of
-items with their category, importance (`pflicht` | `optional`), quantity (a
-fixed number, or a `{ min, max }` range), and an optional `icon` (a single
-emoji; falls back to a per-category default if omitted — see
-`CATEGORY_ICONS` in `src/lib/engine.ts`). Because it's just a function, a
-preset author has the full language available — loops, conditionals,
-arithmetic — instead of a fixed rule vocabulary:
+`resolveItems` receives the trip's day count and selected activities
+(`Params` — just `presetIds` and `days`) plus `vars`, a flat map of every
+*claimed variable*'s value keyed by variable id (see [Custom
+variables](#custom-variables) below) — that's where climate, mode of
+travel, destination scope, gender, and any preset-specific choice (e.g.
+Sommerlager's "Rolle") all live. It returns the list of items with their
+category, importance (`pflicht` | `optional`), quantity (a fixed number, or
+a `{ min, max }` range), and an optional `icon` (a single emoji; falls back
+to a per-category default if omitted — see `CATEGORY_ICONS` in
+`src/lib/engine.ts`). Because it's just a function, a preset author has the
+full language available — loops, conditionals, arithmetic — instead of a
+fixed rule vocabulary:
 
 ```ts
-resolveItems(params) {
+resolveItems(params, vars) {
   const items: Item[] = [
     { id: 'ski-skisocken', name: 'Skisocken', category: 'Kleidung', importance: 'pflicht',
       quantity: perDay(1, params.days) },      // per-day quantity
@@ -77,7 +82,7 @@ resolveItems(params) {
       quantity: { min: 1, max: 2 } },           // range quantity
   ];
 
-  if (params.climate.includes('frostig')) {
+  if (vars.climate?.includes('frostig')) {
     items.push({ id: 'ski-handwaermer', name: 'Handwärmer', category: 'Ausrüstung',
       importance: 'optional', quantity: perDay(1, params.days, 10) }); // capped
   }
@@ -88,8 +93,54 @@ resolveItems(params) {
 
 `src/presets/helpers.ts` has small helpers (`perDay`, `perDayRange`) for
 scaling a quantity by trip length with an optional cap; using them is
-optional. Gender-specific items are just an `if (params.gender === ...)`
+optional. Gender-specific items are just an `if (vars.gender?.includes(...))`
+(or the `matchesGender` helper, see [below](#keine-angabe-no-selection))
 inside `resolveItems` — there's no separate `gender` field on `Item`.
+
+### Custom variables
+
+Beyond `Params`, a preset can declare `variables: PresetVariable[]` — extra
+named, defaulted choices shown in the form (e.g. Sommerlager's "Rolle:
+Kind/Leiter:in"). Climate, mode of travel, destination scope and gender are
+not special-cased fields either; they're ordinary variables defined once in
+`src/presets/sharedVariables.ts` (`CLIMATE_VARIABLE`, `TRAVEL_VARIABLE`,
+`DESTINATION_VARIABLE`, `GENDER_VARIABLE`) and **claimed** by whichever
+presets need them:
+
+```ts
+import { CLIMATE_VARIABLE } from './sharedVariables';
+
+const skifahren: PresetDefinition = {
+  id: 'skifahren',
+  // ...
+  variables: [CLIMATE_VARIABLE],
+  resolveItems(params, vars) {
+    if (vars.climate?.includes('frostig')) { /* ... */ }
+    // ...
+  },
+};
+```
+
+A variable is identified only by its `id` — two presets that both claim
+`CLIMATE_VARIABLE` share *one* value (`vars.climate` is the same array in
+both `resolveItems` calls), not independent copies; that's what "claiming"
+means, and it's why climate ends up as a single answer for the whole trip
+even though almost every preset reads it. `base` is always active, so its
+claimed variables (all four shared ones) are effectively always shown in the
+form, exactly like when they were bespoke top-level fields. A preset that
+reads a variable should generally claim it too, even if some other active
+preset (usually `base`) already does — claiming is what guarantees the
+control and its default exist regardless of which other presets happen to
+be active, and `ParameterForm.vue` renders a claimed variable only once
+even if several active presets claim it.
+
+`TripSelection.vars`/`ItemProgress`'s sibling storage is a flat
+`Record<string, string[]>` keyed by variable id — a single-select
+variable's value is a zero-or-one-element array (`[]` is "keine Angabe"),
+a multi-select's (`multi: true`, e.g. climate) is zero-or-more. `allowUnset`
+adds a "keine Angabe" empty `<select>` option for a single-select variable;
+omit it for one that should always have a concrete value (Sommerlager's
+"Rolle" has no "keine Angabe").
 
 Presets never deal with dates — the user picks a start/end date in
 `ParameterForm`, and `deriveParams()` (`src/lib/schema.ts`) turns that into
@@ -100,25 +151,28 @@ author never needs to touch date logic.
 
 ### Multi-select activities and climate
 
-`presetIds` and `climate` are both arrays on `Params`/`TripSelection`, not
-single values — a trip can combine several activities (skiing *and* a
-swimming-pool visit on the same vacation) and several climates (hot days,
-cold nights), and the resulting list is simply the union of whatever each
-selected value implies. `PackingApp.vue` resolves this by merging `base`
-with *every* matched preset in one `resolveList()` call — `engine.ts` itself
-was already written to merge an arbitrary list of presets, so no engine
-changes were needed, only threading an array through the UI/schema layer.
-`ParameterForm.vue` renders both as a row of toggle chips (checkboxes styled
-as pills) rather than a `<select>`, since more than one can be active.
+`presetIds` (on `Params`/`TripSelection`) and `climate` (a claimed variable,
+`vars.climate`) are both arrays, not single values — a trip can combine
+several activities (skiing *and* a swimming-pool visit on the same vacation)
+and several climates (hot days, cold nights), and the resulting list is
+simply the union of whatever each selected value implies. `PackingApp.vue`
+resolves this by merging `base` with *every* matched preset in one
+`resolveList()` call — `engine.ts` itself was already written to merge an
+arbitrary list of presets, so no engine changes were needed, only threading
+an array through the UI/schema layer. `ParameterForm.vue` renders both as a
+row of toggle chips (checkboxes styled as pills) rather than a `<select>`,
+since more than one can be active — for `presetIds` always, for a claimed
+variable whenever its `multi` flag is set (see [Custom
+variables](#custom-variables) above).
 
 An empty `climate`/`presetIds` array is "keine Angabe" — no toggle chip
-active. For `climate`, a plain `params.climate.includes('warm')` check is
-already `false` for an empty array, so "no climate selected" naturally
-means "include none of the climate-conditional items", the same way it did
-before climate became an array. For `presetIds`, an empty array just means
-no *activity-specific* items are added — `PackingApp.vue` always merges
-`base` regardless (`resolveList(deriveParams(tripSelection), [base,
-...selectedPresets])`, unconditionally), so the universal essentials are
+active. For `climate`, a plain `vars.climate?.includes('warm')` check is
+already falsy for an empty (or absent) array, so "no climate selected"
+naturally means "include none of the climate-conditional items". For
+`presetIds`, an empty array just means no *activity-specific* items are
+added — `PackingApp.vue` always merges `base` regardless
+(`resolveList(deriveParams(tripSelection), [base, ...selectedPresets],
+tripSelection.vars)`, unconditionally), so the universal essentials are
 never gated behind picking an activity; a non-blocking hint above the list
 suggests picking one for more.
 
@@ -130,27 +184,30 @@ together.
 
 ### "Keine Angabe" (no selection)
 
-`travel`, `destination`, and `gender` are optional on `Params` — the user
-can leave any of them unset instead of picking a value. There's no single
-rule for what "unset" means; it's a per-field, per-branch decision left to
-each preset's plain conditionals:
+`travel`, `destination`, and `gender` are single-select claimed variables
+without `multi` set, so their value is a zero-or-one-element array — the
+user can leave any of them unset (`[]`) instead of picking a value. There's
+no single rule for what "unset" means; it's a per-field, per-branch decision
+left to each preset's plain conditionals:
 
 - **travel / destination default to exclusive.** A plain
-  `params.travel === 'flugzeug'` check is already `false` when `travel` is
-  `undefined`, so an unset value naturally means "include none of the
-  conditional items for this dimension" with no extra code. The one thing
-  to watch for is a *negated* check like `!== 'inland'`, which is `true` for
-  `undefined` and would wrongly include a destination-tier item — those
-  need an explicit `params.destination !== undefined && ...` guard (see
-  `base.ts`).
+  `vars.travel?.[0] === 'flugzeug'` check is already `false` when
+  `vars.travel` is empty/absent, so an unset value naturally means "include
+  none of the conditional items for this dimension" with no extra code. The
+  one thing to watch for is a *negated* check like `!== 'inland'`, which is
+  `true` for `undefined` and would wrongly include a destination-tier item —
+  those need an explicit `destination !== undefined && ...` guard (see
+  `base.ts`, which reads `vars.destination?.[0]` into a local once at the
+  top of `resolveItems` for exactly this).
 - **gender defaults to inclusive.** An unset gender means "show every
   gender-specific variant" (the user can decide/skip what doesn't apply),
   which is the opposite default — so gender checks use the
-  `matchesGender(params.gender, target)` helper from `presets/helpers.ts`
-  (`gender === undefined || gender === target`) instead of a plain
-  equality check. `sommerlager.ts`'s "Nachtzeug Jungen"/"Nachtzeug Mädchen"
-  split is the clearest example: unset gender shows both variants,
-  `divers` shows neither, `maennlich`/`weiblich` show just their own.
+  `matchesGender(vars.gender, target)` helper from `presets/helpers.ts`
+  (`gender === undefined || gender.length === 0 || gender.includes(target)`)
+  instead of a plain equality check. `sommerlager.ts`'s "Nachtzeug
+  Jungen"/"Nachtzeug Mädchen" split is the clearest example: unset gender
+  shows both variants, `divers` shows neither, `maennlich`/`weiblich` show
+  just their own.
 
 A new preset should apply the same judgment per field it conditions on —
 there's no framework-level switch to flip.
@@ -230,11 +287,16 @@ parameter matrix would be wasted work that gets exponentially slower with
 every new preset (`2^presets`):
 
 1. Every individual activity preset (merged with `base`) against the full
-   parameter matrix — every climate subset (the powerset of all 4 values,
-   including "none") × travel × destination × gender × several day counts,
-   the latter three including `undefined`/"keine Angabe" — catching thrown
-   exceptions and schema violations, and recording every id each preset can
-   ever produce. ~24,600 combinations.
+   variable matrix — every combination of every variable either `base` or
+   the preset claims (climate's full powerset of 4 values including "none",
+   travel/destination/gender each including "keine Angabe", plus any
+   preset-specific variable like Sommerlager's "Rolle") × several day
+   counts — catching thrown exceptions and schema violations, and recording
+   every id each preset can ever produce. `variableCombos()` in
+   `validate-presets.ts` generates this generically from each preset's
+   `variables` array rather than hardcoding climate/travel/destination/
+   gender, so a newly claimed (or newly added) variable is covered
+   automatically.
 2. A naming-convention check: any id *not* prefixed `shared-` must be
    globally unique across presets. Two presets sharing an id is only valid
    as a deliberate `shared-` merge (see [Cross-preset item
@@ -257,28 +319,35 @@ Useful as a quick regression check after editing a preset.
 
 - `src/lib/schema.ts` — Zod schemas and types shared by presets and the app:
   `TripSelection` (what the user picks — including `startDate`/`endDate`,
-  persisted as-is), `Params`/`deriveParams()` (what presets consume, with
-  `days` computed from the dates), `Item`, `Quantity`, category/importance
-  /climate/etc. enums, `ItemState` for the four-way checklist state,
-  `ItemProgress` for a per-item `{ state, amount }` pair. `presetIds` and
-  `climate` are arrays (multi-select); `travel`/`destination`/`gender` are
-  single optional values.
+  persisted as-is, and `vars`, the flat claimed-variable value map), `Params`/
+  `deriveParams()` (what presets consume alongside `vars`, with `days`
+  computed from the dates), `Item`, `Quantity`, category/importance/climate
+  /etc. enums, `PresetVariable` (see [Custom variables](#custom-variables)
+  above), `ItemState` for the four-way checklist state, `ItemProgress` for a
+  per-item `{ state, amount }` pair. `presetIds` is an array (multi-select);
+  every claimed variable's value is an array too, zero-or-one-element for a
+  single-select, zero-or-more for a `multi` one.
 - `src/lib/dates.ts` — small ISO-date (`yyyy-mm-dd`) helpers: `todayIso`,
   `addDays`, `daysBetweenInclusive`, all parsed at UTC midnight so calendar
   math isn't affected by the browser's local timezone.
-- `src/lib/engine.ts` — `resolveList(params, presets)` runs each preset's
-  `resolveItems`, validates the output, resolves each item's icon (its own
-  or the category fallback), records which preset(s) produced it
-  (`sourceIds`/`sourceNames`, for the info icon — arrays, since an item can
-  be merged from more than one preset, see [Cross-preset item
+- `src/lib/engine.ts` — `resolveList(params, presets, varValues)` computes
+  the flat, defaulted `vars` map once (`resolveVars()` — union of every
+  active preset's `variables` defaults, overridden by `varValues`) and runs
+  each preset's `resolveItems`/`excludeItemIds` with it, validates the
+  output, resolves each item's icon (its own or the category fallback),
+  records which preset(s) produced it (`sourceIds`/`sourceNames`, for the
+  info icon — arrays, since an item can be merged from more than one
+  preset, see [Cross-preset item
   deduplication](#cross-preset-item-deduplication) below) and groups items
   by category in a fixed display order.
 - `src/lib/storage.ts` — `localStorage` persistence for the trip selection
-  (dates included) and per-item progress (`{ state, amount }`).
+  (dates and `vars` included) and per-item progress (`{ state, amount }`).
 - `src/lib/queryParams.ts` — reads URL query params to prefill the trip
   selection on load (see [Prefilling via URL query
   params](#prefilling-via-url-query-params) below).
-- `src/presets/` — the preset modules described above.
+- `src/presets/` — the preset modules described above, plus
+  `sharedVariables.ts` (the climate/travel/destination/gender variable
+  definitions presets claim).
 - `src/components/` — `PackingApp.vue` (root island) → `ParameterForm.vue`
   (trip parameters, including the start/end date pickers and the
   activity/climate toggle-chip groups) + `PackingList.vue` → `ItemRow.vue`
@@ -349,12 +418,12 @@ travel, …) exactly as `localStorage`/the default would have set it.
 | Param | Maps to | Format |
 | --- | --- | --- |
 | `activities` | `presetIds` | comma-separated preset ids (`skifahren`, `wandern`, `sommerlager`, `camping`, `segeln`, `motorrad`) |
-| `climate` | `climate` | comma-separated (`warm`, `mild`, `kalt`, `frostig`) |
+| `climate` | `vars.climate` | comma-separated (`warm`, `mild`, `kalt`, `frostig`) |
 | `start` | `startDate` | `JJJJ-MM-TT` |
 | `end` | `endDate` | `JJJJ-MM-TT` |
-| `travel` | `travel` | `auto` \| `bahn` \| `flugzeug` |
-| `destination` | `destination` | `inland` \| `eu_schengen` \| `international` |
-| `gender` | `gender` | `divers` \| `maennlich` \| `weiblich` |
+| `travel` | `vars.travel` | `auto` \| `bahn` \| `flugzeug` |
+| `destination` | `vars.destination` | `inland` \| `eu_schengen` \| `international` |
+| `gender` | `vars.gender` | `divers` \| `maennlich` \| `weiblich` |
 
 A few deliberate edge-case decisions in `tripSelectionFromQuery()`:
 
@@ -364,12 +433,15 @@ A few deliberate edge-case decisions in `tripSelectionFromQuery()`:
   everywhere else in the app, not "ignore this param since it's empty."
   Unknown entries in a comma list (a typo'd preset id, an invalid climate
   value) are dropped individually rather than invalidating the whole list.
-- **`travel`/`destination`/`gender` are single optional values, so there's
-  no empty-array equivalent** — a present-but-unrecognized value (including
-  an empty string, `?travel=`) is treated the same as an explicit "keine
-  Angabe" (`undefined`) instead of being silently ignored, matching how the
-  rest of the schema already treats an unset value as meaningful, not
-  missing.
+- **`travel`/`destination`/`gender` are single-select, so there's no
+  plain-empty-array-vs-absent distinction to make** — a present-but-
+  unrecognized value (including an empty string, `?travel=`) is treated the
+  same as an explicit "keine Angabe" (`vars.travel: []`) instead of being
+  silently ignored, matching how the rest of the schema already treats an
+  unset value as meaningful, not missing. `applyQueryOverrides()` merges
+  `vars` one level deep (`{ ...base.vars, ...overrides.vars }`), so a link
+  overriding just `climate` doesn't clobber another stored variable value
+  the URL never mentioned.
 - **A `start`/`end` pair where the end lands before the start** is the one
   case query overrides can produce a genuinely invalid `TripSelection`
   (every other field is validated field-by-field, so nothing else can make

@@ -1,80 +1,71 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { daysBetweenInclusive } from '../lib/dates';
-import type { Climate, PresetVariable, TripSelection } from '../lib/schema';
+import type { PresetVariable, TripSelection } from '../lib/schema';
 
 const props = defineProps<{
   modelValue: TripSelection;
   presetOptions: { id: string; name: string; description?: string; variables?: PresetVariable[] }[];
+  /** `base`'s claimed variables (climate, travel, destination, gender, …) — base is always active, so these render unconditionally, same as before they were variables at all. */
+  baseVariables?: PresetVariable[];
 }>();
 const emit = defineEmits<{ 'update:modelValue': [value: TripSelection] }>();
 
-const CLIMATE_OPTIONS: { value: Climate; label: string }[] = [
-  { value: 'warm', label: 'Warm' },
-  { value: 'mild', label: 'Mild' },
-  { value: 'kalt', label: 'Kalt' },
-  { value: 'frostig', label: 'Frostig' },
-];
-
-// v-model-backed computed per field, for the three remaining optional
-// single-value dimensions. Vue's SSR renderer special-cases v-model on
-// <select> to mark the correct <option selected>, which plain :value/
-// @change bindings do not — using v-model avoids a hydration mismatch on
-// first load. Native <select> values are always strings, so the empty
-// "Keine Angabe" option is represented as '' in the DOM and converted
-// to/from `undefined` in the model here.
-function optionalField<K extends 'travel' | 'destination' | 'gender'>(key: K) {
-  return computed<string>({
-    get: () => props.modelValue[key] ?? '',
-    set: (value) => emit('update:modelValue', { ...props.modelValue, [key]: value === '' ? undefined : value }),
-  });
-}
-
-const travel = optionalField('travel');
-const destination = optionalField('destination');
-const gender = optionalField('gender');
-
-// Activities and climate are multi-select — a trip can combine several
-// activities (e.g. Skifahren *and* Sommerlager) and several climates (e.g.
-// hot days and cold nights), so these toggle a value in/out of an array
-// instead of picking a single one.
+// Activities are multi-select — a trip can combine several (e.g. Skifahren
+// *and* Sommerlager), so this toggles a value in/out of an array instead of
+// picking a single one.
 function togglePresetId(id: string) {
   const current = props.modelValue.presetIds;
   const next = current.includes(id) ? current.filter((existing) => existing !== id) : [...current, id];
   emit('update:modelValue', { ...props.modelValue, presetIds: next });
 }
 
-function toggleClimate(value: Climate) {
-  const current = props.modelValue.climate;
-  const next = current.includes(value) ? current.filter((existing) => existing !== value) : [...current, value];
-  emit('update:modelValue', { ...props.modelValue, climate: next });
-}
-
 const selectedDescriptions = computed(() =>
   props.presetOptions.filter((preset) => props.modelValue.presetIds.includes(preset.id)).map((preset) => preset.description),
 );
 
-// Preset-specific variables (e.g. Sommerlager's "Rolle") only make sense —
-// and are only shown — while their preset is actually selected.
+// Every claimed variable (see PresetVariable) is stored flat by id in
+// `modelValue.vars`, shared across whichever presets claim it — a single-
+// select's value is a zero-or-one-element array, a multi-select's is
+// zero-or-more.
+function varValue(variable: PresetVariable): string[] {
+  return props.modelValue.vars[variable.id] ?? variable.default;
+}
+
+function setVar(variableId: string, value: string[]) {
+  emit('update:modelValue', { ...props.modelValue, vars: { ...props.modelValue.vars, [variableId]: value } });
+}
+
+function toggleMultiVar(variable: PresetVariable, value: string) {
+  const current = varValue(variable);
+  const next = current.includes(value) ? current.filter((existing) => existing !== value) : [...current, value];
+  setVar(variable.id, next);
+}
+
+// Native <select> values are always strings, so the empty "Keine Angabe"
+// option is represented as '' in the DOM and converted to/from `[]` here.
+function singleVarValue(variable: PresetVariable): string {
+  return varValue(variable)[0] ?? '';
+}
+
+function setSingleVar(variable: PresetVariable, value: string) {
+  setVar(variable.id, value === '' ? [] : [value]);
+}
+
+// `base`'s claimed variables (climate, travel, destination, gender, …)
+// always render — base is always active — in their own top-level fields.
+const globalVariables = computed(() => props.baseVariables ?? []);
+const globalVariableIds = computed(() => new Set(globalVariables.value.map((variable) => variable.id)));
+
+// Every *other* variable a currently selected preset claims (e.g.
+// Sommerlager's "Rolle") — variables already covered by `globalVariables`
+// are excluded here so they don't render twice. Only shown while the
+// claiming preset is actually selected.
 const presetsWithVariables = computed(() =>
-  props.presetOptions.filter(
-    (preset) => props.modelValue.presetIds.includes(preset.id) && preset.variables && preset.variables.length > 0,
-  ),
+  props.presetOptions
+    .map((preset) => ({ ...preset, variables: (preset.variables ?? []).filter((variable) => !globalVariableIds.value.has(variable.id)) }))
+    .filter((preset) => props.modelValue.presetIds.includes(preset.id) && preset.variables.length > 0),
 );
-
-function presetVarValue(presetId: string, variable: PresetVariable): string {
-  return props.modelValue.presetVars[presetId]?.[variable.id] ?? variable.default;
-}
-
-function setPresetVar(presetId: string, variableId: string, value: string) {
-  emit('update:modelValue', {
-    ...props.modelValue,
-    presetVars: {
-      ...props.modelValue.presetVars,
-      [presetId]: { ...props.modelValue.presetVars[presetId], [variableId]: value },
-    },
-  });
-}
 
 const tripDays = computed(() => daysBetweenInclusive(props.modelValue.startDate, props.modelValue.endDate));
 
@@ -125,9 +116,10 @@ function setEndDate(value: string) {
           <label :for="`pv-${preset.id}-${variable.id}`">{{ variable.label }}</label>
           <select
             :id="`pv-${preset.id}-${variable.id}`"
-            :value="presetVarValue(preset.id, variable)"
-            @change="setPresetVar(preset.id, variable.id, ($event.target as HTMLSelectElement).value)"
+            :value="singleVarValue(variable)"
+            @change="setSingleVar(variable, ($event.target as HTMLSelectElement).value)"
           >
+            <option v-if="variable.allowUnset" value="">Keine Angabe</option>
             <option v-for="option in variable.options" :key="option.value" :value="option.value">{{ option.label }}</option>
           </select>
         </div>
@@ -156,54 +148,37 @@ function setEndDate(value: string) {
       <p class="field-hint">Reisedauer: {{ tripDays }} {{ tripDays === 1 ? 'Tag' : 'Tage' }}</p>
     </div>
 
-    <div class="field field-wide">
-      <span class="field-label">Klima (mehrere möglich)</span>
-      <div class="toggle-group" role="group" aria-label="Klima auswählen">
-        <label
-          v-for="option in CLIMATE_OPTIONS"
-          :key="option.value"
-          class="toggle-chip"
-          :class="{ active: modelValue.climate.includes(option.value) }"
+    <div v-for="variable in globalVariables" :key="variable.id" class="field" :class="{ 'field-wide': variable.multi }">
+      <template v-if="variable.multi">
+        <span class="field-label">{{ variable.label }}</span>
+        <div class="toggle-group" role="group" :aria-label="`${variable.label} auswählen`">
+          <label
+            v-for="option in variable.options"
+            :key="option.value"
+            class="toggle-chip"
+            :class="{ active: varValue(variable).includes(option.value) }"
+          >
+            <input
+              type="checkbox"
+              class="toggle-chip-input"
+              :checked="varValue(variable).includes(option.value)"
+              @change="toggleMultiVar(variable, option.value)"
+            />
+            {{ option.label }}
+          </label>
+        </div>
+      </template>
+      <template v-else>
+        <label :for="`gv-${variable.id}`">{{ variable.label }}</label>
+        <select
+          :id="`gv-${variable.id}`"
+          :value="singleVarValue(variable)"
+          @change="setSingleVar(variable, ($event.target as HTMLSelectElement).value)"
         >
-          <input
-            type="checkbox"
-            class="toggle-chip-input"
-            :checked="modelValue.climate.includes(option.value)"
-            @change="toggleClimate(option.value)"
-          />
-          {{ option.label }}
-        </label>
-      </div>
-    </div>
-
-    <div class="field">
-      <label for="travel">Verkehrsmittel</label>
-      <select id="travel" v-model="travel">
-        <option value="">Keine Angabe</option>
-        <option value="auto">Auto</option>
-        <option value="bahn">Bahn</option>
-        <option value="flugzeug">Flugzeug</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="destination">Reiseziel</label>
-      <select id="destination" v-model="destination">
-        <option value="">Keine Angabe</option>
-        <option value="inland">Inland</option>
-        <option value="eu_schengen">EU / Schengen</option>
-        <option value="international">International</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="gender">Geschlecht</label>
-      <select id="gender" v-model="gender">
-        <option value="">Keine Angabe</option>
-        <option value="divers">Divers</option>
-        <option value="maennlich">Männlich</option>
-        <option value="weiblich">Weiblich</option>
-      </select>
+          <option v-if="variable.allowUnset" value="">Keine Angabe</option>
+          <option v-for="option in variable.options" :key="option.value" :value="option.value">{{ option.label }}</option>
+        </select>
+      </template>
     </div>
   </form>
 </template>
