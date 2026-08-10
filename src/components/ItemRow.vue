@@ -69,16 +69,6 @@ function onAmountInput(event: Event) {
     @click="onRowClick"
   >
     <div class="item-info">
-      <span class="item-icon" aria-hidden="true">{{ item.icon }}</span>
-      <span
-        class="item-importance-dot"
-        :class="`importance-${item.importance}`"
-        :title="item.importance === 'pflicht' ? 'Pflicht' : 'Optional'"
-      ></span>
-      <span class="item-name" :title="item.name">{{ item.name }}</span>
-      <span class="item-info-icon" tabindex="0" role="note" :aria-label="infoText" :title="infoText">ⓘ</span>
-    </div>
-    <div class="item-controls" @click.stop>
       <input
         v-if="hasQuantity"
         class="item-amount"
@@ -91,8 +81,18 @@ function onAmountInput(event: Event) {
         step="1"
         :value="progress.amount"
         :title="amountTitle"
+        @click.stop
         @input="onAmountInput"
       />
+      <span
+        class="item-importance-dot"
+        :class="`importance-${item.importance}`"
+        :title="item.importance === 'pflicht' ? 'Pflicht' : 'Optional'"
+      ></span>
+      <span class="item-name" :title="item.name">{{ item.icon }} {{ item.name }}</span>
+      <span class="item-info-icon" tabindex="0" role="note" :aria-label="infoText" :title="infoText">ⓘ</span>
+    </div>
+    <div class="item-controls" @click.stop>
       <div class="item-state" role="radiogroup" :aria-label="`Status für ${item.name}`">
         <button
           v-for="s in STATES"
